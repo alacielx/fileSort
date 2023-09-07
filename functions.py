@@ -98,9 +98,13 @@ def updateExecutable(currentVersion, repoName):
         subprocess.Popen([repoUpdater])
         sys.exit()
     else:
+        time.sleep(4)
         print("Latest version installed")
         if os.path.exists(repoUpdater):
-            os.remove(repoUpdater)
+            try:
+                os.remove(repoUpdater)
+            except:
+                print("Could not remove updater")
 
 def downloadExecutable(repoUrl, repoUpdater):
 

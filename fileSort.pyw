@@ -1,4 +1,4 @@
-currentVersion = 'v1.0'
+currentVersion = 'v1.3'
 
 from dataclasses import dataclass, field
 import os
@@ -33,7 +33,9 @@ class Order:
     def moveGlassOrders(self):
         glassOrderFilePath = os.path.join(self.pdfFolder, self.orderFileName[0])
         
-        batesNumbering(glassOrderFilePath)
+        # Remove extra pages and bates number if not mirror
+        doBates = False if self.glass == "MIR" else True
+        processPdf(glassOrderFilePath, doBates)
         
         if self.glass == "SPECIAL":
             self.orderFileName, glassTypes = separatePdfPages(os.path.join(self.pdfFolder, self.orderFileName[0]))
@@ -85,10 +87,33 @@ class Order:
         for fscFile in self.fscMatches:
             fscFilePath = os.path.join(self.dxfFolder, fscFile)
             os.remove(fscFilePath)
-                
-def batesNumbering(pdfPath):
+           
+def batesNumberPages(existingPage):
     global batesNumber
     
+    # Create blank pdf
+    packet = io.BytesIO()
+    can = canvas.Canvas(packet, pagesize=letter)
+
+    # Set the position where you want to add text (in points from bottom-left)
+    x, y = letter[0] - 100, letter[1] - 30  # 1 inch from right, 0.5 inch from top
+    can.setFont("Helvetica",20)
+    can.drawString(x, y, batesLetter + batesNumber)
+    batesNumber = str(int(batesNumber) + 1)
+    can.save()
+    packet.seek(0)
+    tempPdf = PdfReader(packet)
+    
+    newPage = tempPdf.pages[0]
+    existingPage.merge_page(newPage)
+    
+    # Update bates number
+    configProps["bates_number"] = batesNumber
+    updateConfig(configFileName, configProps)
+    
+    return existingPage
+         
+def processPdf(pdfPath, doBates):
     pdf = PdfReader(pdfPath)
     output = PdfWriter()
 
@@ -100,22 +125,11 @@ def batesNumbering(pdfPath):
         if any(s in pageText for s in stringsToExclude):
             continue
 
-        packet = io.BytesIO()
-        can = canvas.Canvas(packet, pagesize=letter)
-
-        # Set the position where you want to add text (in points from bottom-left)
-        x, y = letter[0] - 100, letter[1] - 30  # 1 inch from right, 0.5 inch from top
-        can.setFont("Helvetica",20)
-        can.drawString(x, y, batesLetter + batesNumber)
-        batesNumber = str(int(batesNumber) + 1)
-        can.save()
-        packet.seek(0)
-        tempPdf = PdfReader(packet)
-        
         # Get the current page from the existing PDF
         existingPage = pdf.pages[pageNum]
-        newPage = tempPdf.pages[0]
-        existingPage.merge_page(newPage)
+        
+        if doBates == True:
+            existingPage = batesNumberPages(existingPage)
 
         output.add_page(existingPage)
 
@@ -123,10 +137,6 @@ def batesNumbering(pdfPath):
     outputStream = open(pdfPath, "wb")
     output.write(outputStream)
     outputStream.close()
-
-    # Update bates number
-    configProps["bates_number"] = batesNumber
-    updateConfig(configFileName, configProps)
     
 def getGlassType(pdfPath):
 
@@ -196,10 +206,6 @@ def separatePdfPages(pdfPath):
             output = PdfWriter()
         
         output.add_page(currentPage)
-        
-        
-        
-        
         
         newFile = os.path.split(newPath)[1]
         
@@ -285,9 +291,9 @@ def main():
                 elif pdfCode.find("HYBRID") > 0 or pdfCode.find("V-PLAT") > 0 or pdfCode.find(" CLR") == -1:
                     glass = "SPECIAL"
                 elif pdfCodeInitial in glass14Initial and pdfCode.find(" CLR") > 0:
-                    glass = "1.4"
+                    glass = "1.4 CLEAR"
                 elif pdfCodeInitial in glass38Initial and pdfCode.find(" CLR") > 0:
-                    glass = "3.8"
+                    glass = "3.8 CLEAR"
                 
                 
                 foundOrder = False
@@ -403,7 +409,7 @@ def main():
     result += f"\nLast bates number used: {int(batesNumber) - 1}"
     root = tk.Tk()
     root.withdraw()
-    messagebox.showinfo("Result", result)
+    messagebox.showinfo(f"fileSort {currentVersion}", result)
 
 if __name__ == "__main__":
     updateExecutable(currentVersion, "fileSort")
