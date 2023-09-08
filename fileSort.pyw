@@ -96,7 +96,11 @@ def batesNumberPages(existingPage):
     can = canvas.Canvas(packet, pagesize=letter)
 
     # Set the position where you want to add text (in points from bottom-left)
-    x, y = letter[0] - 100, letter[1] - 30  # 1 inch from right, 0.5 inch from top
+    batesText = batesLetter + batesNumber
+    batesTextWidth = can.stringWidth(batesText, "Helvetica", 20)
+    
+    
+    x, y = letter[0] - 40 - batesTextWidth, letter[1] - 30  # 1 inch from right, 0.5 inch from top
     can.setFont("Helvetica",20)
     can.drawString(x, y, batesLetter + batesNumber)
     batesNumber = str(int(batesNumber) + 1)
