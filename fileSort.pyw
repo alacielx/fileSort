@@ -1,4 +1,4 @@
-currentVersion = 'v1.3'
+currentVersion = 'v1.4'
 
 from dataclasses import dataclass, field
 import os
