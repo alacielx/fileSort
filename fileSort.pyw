@@ -89,7 +89,7 @@ class Order:
             os.remove(fscFilePath)
            
 def batesNumberPages(existingPage):
-    global batesNumber
+    global batesNumber, minBatesNumber, maxBatesNumber
     
     # Create blank pdf
     packet = io.BytesIO()
@@ -102,8 +102,11 @@ def batesNumberPages(existingPage):
     
     x, y = letter[0] - 40 - batesTextWidth, letter[1] - 30  # 1 inch from right, 0.5 inch from top
     can.setFont("Helvetica",20)
-    can.drawString(x, y, batesLetter + batesNumber)
-    batesNumber = str(int(batesNumber) + 1)
+    can.drawString(x, y, batesText)
+    if maxBatesNumber == '-1':
+        batesNumber = str(int(batesNumber) + 1)
+    else:
+        batesNumber = str(int(batesNumber) + 1) if int(batesNumber)  < int(maxBatesNumber) else minBatesNumber
     can.save()
     packet.seek(0)
     tempPdf = PdfReader(packet)
@@ -180,6 +183,8 @@ def separatePdfPages(pdfPath):
     
     newFiles = []
     glassTypes = {}
+    pdfOutputs = {}
+    
     # Separate pages
     for pageNum in range(len(pdf.pages)):
         currentPage = pdf.pages[pageNum]
@@ -197,39 +202,50 @@ def separatePdfPages(pdfPath):
         thickness = str(thickness).replace("\"","")
         thickness = sanitizeName(thickness)
         
-        newPath = os.path.splitext(pdfPath)
-        newPath = newPath[0] + " " + str(thickness) + newPath[1]
+        # if os.path.exists(newPath):
+        #     existingPdf = PdfReader(newPath)
+        #     output = PdfWriter()
+        #     for pageNum2 in range(len(existingPdf.pages)):
+        #         existingPage = existingPdf.pages[pageNum2]
+        #         output.add_page(existingPage)
+        # else:
+        #     output = PdfWriter()
         
-        if os.path.exists(newPath):
-            existingPdf = PdfReader(newPath)
-            output = PdfWriter()
-            for pageNum2 in range(len(existingPdf.pages)):
-                existingPage = existingPdf.pages[pageNum2]
-                output.add_page(existingPage)
+        if thickness in pdfOutputs:
+            output = pdfOutputs[thickness]
         else:
             output = PdfWriter()
         
         output.add_page(currentPage)
+        
+        pdfOutputs[thickness] = output
+        
+    for pdfThickness, pdfOutput in pdfOutputs.items():
+        print(len(pdfOutput.pages))
+        newPath = os.path.splitext(pdfPath)
+        newPath = newPath[0] + " " + str(pdfThickness) + newPath[1]
         
         newFile = os.path.split(newPath)[1]
         
         if not newFile in newFiles:
             newFiles.append(newFile)
         
-        glassTypes[newFile] = thickness
+        glassTypes[newFile] = pdfThickness
         
         outputStream = open(newPath, "wb")
-        output.write(outputStream)
+        pdfOutput.write(outputStream)
         outputStream.close()
         
     os.remove(pdfPath)
     return newFiles, glassTypes
-    
+
+######################################################################################################################################################################
+
 def main():
     # Check if config file exists and has all options
     global configFileName, configProps
     configFileName = 'fileSort.ini'
-    configProps = {"bates_letter" : "", "bates_number" : "", "pdf_folder" : "", "dxf_folder" : "",}
+    configProps = {"bates_letter" : "", "bates_number" : "", "pdf_folder" : "", "dxf_folder" : "", "min_bates_number" : "0", "max_bates_number" : "-1"}
 
     checkConfig(configFileName, configProps)
     configProps = readConfig(configFileName)
@@ -246,21 +262,15 @@ def main():
     if not configProps["bates_number"]:
         configProps["bates_number"] = askInput("Last bates number:")
 
-    global batesLetter, batesNumber, pdfFolder, dxfFolder
+    global batesLetter, batesNumber, pdfFolder, dxfFolder, minBatesNumber, maxBatesNumber
     batesLetter = configProps["bates_letter"]
     batesNumber = configProps["bates_number"]
     pdfFolder = configProps["pdf_folder"]
     dxfFolder = configProps["dxf_folder"]
+    minBatesNumber = configProps["min_bates_number"]
+    maxBatesNumber = configProps["max_bates_number"]
 
     updateConfig(configFileName, configProps)
-
-    # currentDir = os.getcwd()
-    # pdfFolder = os.path.join(currentDir, "dxfCheck", "GLASS ORDERS")
-    # dxfFolder = os.path.join(currentDir, "dxfCheck", "DXFS")
-
-    # # COMMENT THIS FOR TESTING
-    # pdfFolder = r"P:\Alaciel De La Garza --\GLASS ORDERS"
-    # dxfFolder = r"P:\Alaciel De La Garza --\DXFS"
 
     glassOrderPrefix = "Glass Order - "
     installPrefix = "Installation - "
@@ -365,13 +375,9 @@ def main():
     for order in orders:
         assert isinstance(order, Order)
         
-        # Move Glass Order
+        # Move Glass Order and installs
         if ((order.fsMatches and order.fscMatches) or (order.glass == "MIR" and (order.fsMatches or order.fscMatches))) and (not order.glass == None):
 
-            # if order.glass == "HYBRID":
-            #     pageThickness = getGlassType()
-            #     for i in pageThickness:
-            #         break
             try:
                 order.moveGlassOrders()
                 
