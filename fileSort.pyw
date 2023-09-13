@@ -199,15 +199,6 @@ def separatePdfPages(pdfPath):
         thickness = str(thickness).replace("\"","")
         thickness = sanitizeName(thickness)
         
-        # if os.path.exists(newPath):
-        #     existingPdf = PdfReader(newPath)
-        #     output = PdfWriter()
-        #     for pageNum2 in range(len(existingPdf.pages)):
-        #         existingPage = existingPdf.pages[pageNum2]
-        #         output.add_page(existingPage)
-        # else:
-        #     output = PdfWriter()
-        
         if thickness in pdfOutputs:
             output = pdfOutputs[thickness]
         else:
@@ -273,10 +264,11 @@ def main():
     installPrefix = "Installation - "
     orders = []
 
-    glass14Initial = ["V", "S"]
-    glass38Initial = ["R"]
-    glassMirInitial = ["M", "L"]
-
+    glass14Keywords = ["V", "S"]
+    glass38Keywords = ["R"]
+    glassMirKeywords = ["M", "L"]
+    glassSpecialKeywords = ["HYBRID", "VPLAT", "V-PLAT"]
+    
     # Get pdf name and sort data into list of orders
     for pdfFile in os.listdir(pdfFolder):
         if pdfFile.lower().endswith(".pdf"):
@@ -297,13 +289,13 @@ def main():
                 
                 glass = None
                 pdfCode = pdfCode.upper()
-                if pdfCodeInitial in glassMirInitial:
+                if pdfCodeInitial in glassMirKeywords:
                     glass = "MIR"
-                elif pdfCode.find("HYBRID") > 0 or pdfCode.find("V-PLAT") > 0 or pdfCode.find(" CLR") == -1:
+                elif any(keyword in pdfCode for keyword in glassSpecialKeywords) or not " CLR" in pdfCode:
                     glass = "SPECIAL"
-                elif pdfCodeInitial in glass14Initial and pdfCode.find(" CLR") > 0:
+                elif pdfCodeInitial in glass14Keywords and " CLR" in pdfCode:
                     glass = "1.4 CLEAR"
-                elif pdfCodeInitial in glass38Initial and pdfCode.find(" CLR") > 0:
+                elif pdfCodeInitial in glass38Keywords and " CLR" in pdfCode:
                     glass = "3.8 CLEAR"
                 
                 
