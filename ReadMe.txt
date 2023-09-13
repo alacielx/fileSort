@@ -1,3 +1,5 @@
+fileSort v1.4
+
 RULES:
 - "Project Code" on CRL must have NO spaces
 - Hybrid showers must include the word "HYBRID" in "Project Name"
