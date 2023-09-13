@@ -1,72 +1,46 @@
-from dataclasses import dataclass, field
-import os
-import re
-import shutil
 import tkinter as tk
-from tkinter import messagebox
-import sys
-from functions import *
 
-def batesNumberPages(existingPage):
-    global batesNumber, minBatesNumber, maxBatesNumber
+def show_custom_messagebox():
+    custom_messagebox = tk.Toplevel()
+    custom_messagebox.title("Custom Messagebox")
+
+    text_content = "This is a custom messagebox with non-editable text."
+    text_widget = tk.Text(custom_messagebox, wrap=tk.WORD, width=40)
+    text_widget.insert(tk.END, text_content)
     
-    # Create blank pdf
-    packet = io.BytesIO()
-    can = canvas.Canvas(packet, pagesize=letter)
+    # Set the state of the Text widget to "disabled"
+    text_widget.configure(state="disabled")
+    text_widget.pack()
 
-    # Set the position where you want to add text (in points from bottom-left)
-    batesText = batesLetter + batesNumber
-    batesTextWidth = can.stringWidth(batesText, "Helvetica", 20)
-    
-    
-    x, y = letter[0] - 40 - batesTextWidth, letter[1] - 30  # 1 inch from right, 0.5 inch from top
-    can.setFont("Helvetica",20)
-    can.drawString(x, y, batesText)
-    if maxBatesNumber == '-1':
-        batesNumber = str(int(batesNumber) + 1)
-    else:
-        batesNumber = str(int(batesNumber) + 1) if int(batesNumber)  < int(maxBatesNumber) else minBatesNumber
-    can.save()
-    packet.seek(0)
-    tempPdf = PdfReader(packet)
-    
-    newPage = tempPdf.pages[0]
-    existingPage.merge_page(newPage)
-    
-    # Update bates number
-    # configProps["bates_number"] = batesNumber
-    # updateConfig(configFileName, configProps)
-    
-    return existingPage
+    ok_button = tk.Button(custom_messagebox, text="OK", command=custom_messagebox.destroy)
+    ok_button.pack()
 
-def processPdf(pdfPath, doBates=True):
-    pdf = PdfReader(pdfPath)
-    output = PdfWriter()
+    # Calculate the number of lines in the text
+    num_lines = text_widget.get("1.0", "end-1c").count("\n") + 1
 
-    stringsToExclude = ["GLASS ORDER", "TEMPLATE"]
+    # Calculate the required width based on the text content
+    text_widget.update_idletasks()
+    text_widget_width = text_widget.winfo_reqwidth()
 
-    # Loop through each page of the existing PDF
-    for pageNum in range(len(pdf.pages)):
-        pageText = pdf.pages[pageNum].extract_text().upper()
-        if any(s in pageText for s in stringsToExclude):
-            continue
+    # Calculate the required height based on the number of lines and text content
+    text_widget_height = text_widget.winfo_reqheight()
 
-        # Get the current page from the existing PDF
-        existingPage = pdf.pages[pageNum]
-        
-        if doBates == True:
-            existingPage = batesNumberPages(existingPage)
+    # Get the screen width and height
+    screen_width = custom_messagebox.winfo_screenwidth()
+    screen_height = custom_messagebox.winfo_screenheight()
 
-        output.add_page(existingPage)
+    # Calculate the x and y positions to center the window
+    x = (screen_width - text_widget_width) // 2
+    y = (screen_height - text_widget_height) // 2
 
-    # Write the output to a new PDF file
-    newPdfPath = os.path.splitext(pdfPath)[0] + "_new" + os.path.splitext(pdfPath)[1] 
-    outputStream = open(newPdfPath, "wb")
-    output.write(outputStream)
-    outputStream.close()
+    # Set the window size and position in the center
+    custom_messagebox.geometry(f"{text_widget_width}x{text_widget_height}+{x}+{y}")
 
-batesLetter = 'A'
-batesNumber = '0'
-minBatesNumber = '0'
-maxBatesNumber = '1'
-processPdf(r"C:\Users\agarza\OneDrive - Arrow Glass Industries\Documents\GitHub\fileSort\1.pdf")
+# Create the main tkinter window
+root = tk.Tk()
+
+# Create a button to trigger the custom messagebox
+button = tk.Button(root, text="Show Custom Messagebox", command=show_custom_messagebox)
+button.pack()
+
+root.mainloop()
