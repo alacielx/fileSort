@@ -1,4 +1,4 @@
-currentVersion = 'v1.4'
+currentVersion = 'v1.5'
 
 from dataclasses import dataclass, field
 import os
@@ -9,38 +9,36 @@ from tkinter import messagebox
 import sys
 from functions import *
 
-# from getJobNums import *
-
 @dataclass
 class Order:
     uniqueCode: str
-    orderFileName: list = field(default_factory=list)
-    installFileName: str = None
-    pdfFolder: str = None
-    dxfFolder: str = None
-    fsCode: str = None
-    fscCode: str = None
-    glass: str = None
-    fsMatches: list = field(default_factory=list)
-    fscMatches: list = field(default_factory=list)
+    glassOrderFileName: list
+    pdfFolder: str
+    dxfFolder: str
+    fsCode: str
+    fscCode: str
+    glassType: str
+    fsMatchesFileName: list = field(default_factory=list)
+    fscMatchesFileName: list = field(default_factory=list)
+    installationFileName: str = None
     
     def addFsMatch(self, fileName):
-        self.fsMatches.append(fileName)
+        self.fsMatchesFileName.append(fileName)
 
     def addFscMatch(self, fileName):
-        self.fscMatches.append(fileName)
+        self.fscMatchesFileName.append(fileName)
         
     def moveGlassOrders(self):
-        glassOrderFilePath = os.path.join(self.pdfFolder, self.orderFileName[0])
+        glassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName[0])
         
         # Remove extra pages and bates number if not mirror
-        doBates = False if self.glass == "MIR" else True
+        doBates = False if self.glassType == "MIR" else True
         processPdf(glassOrderFilePath, doBates)
         
-        if self.glass == "SPECIAL":
-            self.orderFileName, glassTypes = separatePdfPages(os.path.join(self.pdfFolder, self.orderFileName[0]))
+        if self.glassType == "SPECIAL":
+            self.glassOrderFileName, glassTypes = separatePdfPages(os.path.join(self.pdfFolder, self.glassOrderFileName[0]))
             
-            for glassOrderFile in self.orderFileName:
+            for glassOrderFile in self.glassOrderFileName:
                 glassOrderFilePath = os.path.join(self.pdfFolder, glassOrderFile)
                 newOrderFolder = os.path.join(self.pdfFolder, glassTypes[glassOrderFile])
                 newGlassOrderFilePath = os.path.join(newOrderFolder, glassOrderFile)
@@ -49,9 +47,9 @@ class Order:
                 shutil.move(glassOrderFilePath, newGlassOrderFilePath)
                 self.copyDxfs(newOrderFolder)
         else:
-            glassOrderFilePath = os.path.join(self.pdfFolder, self.orderFileName[0])
-            newOrderFolder = os.path.join(self.pdfFolder, self.glass)
-            newGlassOrderFilePath = os.path.join(newOrderFolder, self.orderFileName[0])
+            glassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName[0])
+            newOrderFolder = os.path.join(self.pdfFolder, self.glassType)
+            newGlassOrderFilePath = os.path.join(newOrderFolder, self.glassOrderFileName[0])
             
             os.makedirs(newOrderFolder, exist_ok=True)
             shutil.move(glassOrderFilePath, newGlassOrderFilePath)
@@ -60,31 +58,30 @@ class Order:
         self.delDxfs()
     
     def moveInstalls(self):
-        if not self.glass == "MIR":
-            installFilePath = os.path.join(self.pdfFolder, self.installFileName)
-            installFolder = os.path.join(self.pdfFolder, "Installation Sheets")
-            newInstallFilePath = os.path.join(installFolder, self.installFileName)
-            
-            os.makedirs(installFolder, exist_ok=True)
-            shutil.move(installFilePath, newInstallFilePath)
+        installFilePath = os.path.join(self.pdfFolder, self.installationFileName)
+        installFolder = os.path.join(self.pdfFolder, "Installation Sheets")
+        newInstallFilePath = os.path.join(installFolder, self.installationFileName)
+        
+        os.makedirs(installFolder, exist_ok=True)
+        shutil.move(installFilePath, newInstallFilePath)
             
     def copyDxfs(self, newOrderFolder):
-        for fsFile in self.fsMatches:
+        for fsFile in self.fsMatchesFileName:
             fsFilePath = os.path.join(self.dxfFolder, fsFile)
             newFsFilePath = os.path.join(newOrderFolder, fsFile)
             shutil.copy(fsFilePath, newFsFilePath)
             
-        for fscFile in self.fscMatches:
+        for fscFile in self.fscMatchesFileName:
             fscFilePath = os.path.join(self.dxfFolder, fscFile)
             newFscFilePath = os.path.join(newOrderFolder, fscFile)
             shutil.copy(fscFilePath, newFscFilePath)
             
     def delDxfs(self):
-        for fsFile in self.fsMatches:
+        for fsFile in self.fsMatchesFileName:
             fsFilePath = os.path.join(self.dxfFolder, fsFile)
             os.remove(fsFilePath)
             
-        for fscFile in self.fscMatches:
+        for fscFile in self.fscMatchesFileName:
             fscFilePath = os.path.join(self.dxfFolder, fscFile)
             os.remove(fscFilePath)
            
@@ -250,17 +247,17 @@ def main():
     checkConfig(configFileName, configProps)
     configProps = readConfig(configFileName)
 
-    if not configProps['pdf_folder']:
+    if not configProps['pdf_folder'] or not os.path.exists(configProps['pdf_folder']):
         configProps['pdf_folder'] = askFolderDirectory("Select Glass Order/Install Folder")
     
-    if not configProps['dxf_folder']:
+    if not configProps['dxf_folder'] or not os.path.exists(configProps['dxf_folder']):
         configProps['dxf_folder'] = askFolderDirectory("Select DXF Folder")
     
     if not configProps["bates_letter"]:
         configProps["bates_letter"] = askInput("Bates letter:")
 
-    if not configProps["bates_number"]:
-        configProps["bates_number"] = askInput("Last bates number:")
+    if not configProps["bates_number"] or not str(configProps["bates_number"]).isnumeric():
+        configProps["bates_number"] = askInput("Last bates number:", type = int)
 
     global batesLetter, batesNumber, pdfFolder, dxfFolder, minBatesNumber, maxBatesNumber
     batesLetter = configProps["bates_letter"]
@@ -315,16 +312,16 @@ def main():
                     assert isinstance(order, Order)
                     if order.uniqueCode == uniqueCode:
                         foundOrder = True
-                        order.orderFileName.append(pdfFile)
+                        order.glassOrderFileName.append(pdfFile)
                         order.pdfFolder = pdfFolder
                         order.dxfFolder = dxfFolder
                         order.fsCode = fsCode
                         order.fscCode = fscCode
-                        order.glass = glass
+                        order.glassType = glass
                         break
                     
                 if not foundOrder:
-                    orders.append(Order(uniqueCode, orderFileName=[pdfFile], pdfFolder=pdfFolder, dxfFolder=dxfFolder, fsCode=fsCode, fscCode=fscCode, glass=glass))
+                    orders.append(Order(uniqueCode, [pdfFile], pdfFolder, dxfFolder, fsCode, fscCode, glass))
                     
             # Get installation details
             if pdfFile.startswith(installPrefix):
@@ -341,85 +338,107 @@ def main():
                     assert isinstance(order, Order)
                     if order.uniqueCode == uniqueCode:
                         foundOrder = True
-                        order.installFileName = pdfFile
+                        order.installationFileName = pdfFile
                         break
                 if not foundOrder:
-                    orders.append(Order(uniqueCode, installFileName=pdfFile))
+                    orders.append(Order(uniqueCode, None, None, None, None, None, None, installationFileName=pdfFile))
 
     # Get dxf codes
-
-    uniqueDxfs = set()
-
+    extraDxfs = set()
     for dxfFile in os.listdir(dxfFolder):
         if dxfFile.lower().endswith(".dxf"):
+            foundOrder = False
+            
             underscoreIndex1 = dxfFile.find("_")
             underscoreIndex2 = dxfFile.find("_", underscoreIndex1 + 1)
             dxfCode = dxfFile[:underscoreIndex1] if underscoreIndex1 > 0 else None
             dxfCodeExt = dxfFile[:underscoreIndex2] if underscoreIndex2 > 0 else None
             
             if dxfCodeExt:
-                uniqueDxfs.add(dxfCode)
-
                 for order in orders:
                     assert isinstance(order, Order)
                     if dxfCodeExt == order.fsCode:
                         order.addFsMatch(dxfFile)
+                        foundOrder = True
                     if dxfCodeExt == order.fscCode:
                         order.addFscMatch(dxfFile)
+                        foundOrder = True
+                        
+            if not foundOrder:                
+                extraDxfs.add(dxfFile)
 
-    # Add missing codes to a list
-    matchedDxfs = 0
+    # Check orders to move
+    movedOrders = 0
+    missingGlassOrders = set()
+    missingInstallations = set()
     missingDxfs = set()
-    missingGlassOrder = set()
-
+    
     for order in orders:
         assert isinstance(order, Order)
         
+        # Check for missing information
+        skipOrder = False
+        
+        if not order.glassType:
+            skipOrder = True
+        
+        if not order.glassOrderFileName:
+            missingGlassOrders.add(order.uniqueCode)
+            skipOrder = True
+        elif not order.installationFileName:
+            missingInstallations.add(order.uniqueCode)
+            skipOrder = True
+       
+        if order.glassType == "MIR":
+            if not order.fsMatchesFileName and not order.fscMatchesFileName:
+                missingDxfs.add(order.fsCode)
+                missingDxfs.add(order.fscCode)
+                skipOrder = True
+        else:
+            if not order.fsMatchesFileName:
+                missingDxfs.add(order.fsCode)
+                skipOrder = True
+            if not order.fscMatchesFileName:
+                missingDxfs.add(order.fscCode)
+                skipOrder = True
+            
         # Move Glass Order and installs
-        if ((order.fsMatches and order.fscMatches) or (order.glass == "MIR" and (order.fsMatches or order.fscMatches))) and (not order.glass == None):
-
+        if not skipOrder:
             try:
-                order.moveGlassOrders()
-                
-                order.moveInstalls()
-
-                matchedDxfs+=1
+                if order.glassType == "MIR":
+                    order.moveGlassOrders()
+                    movedOrders+=1
+                else:
+                    order.moveGlassOrders()
+                    order.moveInstalls()
+                    movedOrders+=1
             except:
                 continue
-        elif not order.orderFileName:
-            missingGlassOrder.add(order.installFileName)
-        else:
-            # Add dxf to missing list
-            if not order.fsMatches:
-                missingDxfs.add(order.fsCode)
-            if not order.fscMatches:
-                missingDxfs.add(order.fscCode)
+                    
+    result = []
 
-    result = ""
-
-    # if not orders:
-    #     result = f"No orders were found."
-    # elif missingDxfs:
-        
-        
-        
-    if not missingDxfs:
-        if not orders:
-            result = f"No orders were found."
-        elif len(orders) != len(uniqueDxfs):
-            result = f"Uneven matches\nPDFs: {len(orders)}, DXFs: {len(uniqueDxfs)}"
-        else:
-            result = f"Matched {matchedDxfs} order(s)"
+    if not orders:
+        result.append("No orders were found.")
     else:
-        if matchedDxfs > 0:
-            result = f"Matched {matchedDxfs} order(s)\n\n"
-        result += "Missing DXFs:\n"
-        result += "\n".join(sorted(missingDxfs))
+        if movedOrders > 0:
+            result.append(f"Moved {movedOrders} order(s)")
+            
+        if missingGlassOrders:
+            result.append("Missing Glass Order(s):\n" + "\n".join(sorted(missingGlassOrders)))
+            
+        if missingInstallations:
+            result.append("Missing Installation(s):\n" + "\n".join(sorted(missingInstallations)))
         
-    result += f"\nLast bates number used: {int(batesNumber) - 1}"
+        if missingDxfs:
+            result.append("Missing DXF(s):\n" + "\n".join(sorted(missingDxfs)))
+            
+        if extraDxfs:
+            result.append("Extra DXF(s):\n" + "\n".join(sorted(extraDxfs)))
+    
+    result.append(f"Last bates number used: {int(batesNumber) - 1}")
     root = tk.Tk()
     root.withdraw()
-    messagebox.showinfo(f"fileSort {currentVersion}", result)
+    messagebox.showinfo(f"fileSort {currentVersion}", "\n".join(result))
 
 if __name__ == "__main__":
     updateExecutable(currentVersion, "fileSort")
