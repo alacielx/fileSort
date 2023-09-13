@@ -312,7 +312,7 @@ def main():
                     assert isinstance(order, Order)
                     if order.uniqueCode == uniqueCode:
                         foundOrder = True
-                        order.glassOrderFileName.append(pdfFile)
+                        order.glassOrderFileName = [pdfFile]
                         order.pdfFolder = pdfFolder
                         order.dxfFolder = dxfFolder
                         order.fsCode = fsCode
@@ -385,7 +385,7 @@ def main():
         if not order.glassOrderFileName:
             missingGlassOrders.add(order.uniqueCode)
             skipOrder = True
-        elif not order.installationFileName:
+        elif not order.installationFileName and not order.glassType == "MIR":
             missingInstallations.add(order.uniqueCode)
             skipOrder = True
        
@@ -438,7 +438,7 @@ def main():
     result.append(f"Last bates number used: {int(batesNumber) - 1}")
     root = tk.Tk()
     root.withdraw()
-    messagebox.showinfo(f"fileSort {currentVersion}", "\n".join(result))
+    messagebox.showinfo(f"fileSort {currentVersion}", "\n\n".join(result))
 
 if __name__ == "__main__":
     updateExecutable(currentVersion, "fileSort")
