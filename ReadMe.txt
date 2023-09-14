@@ -1,4 +1,4 @@
-fileSort v1.5
+fileSort v1.6
 
 RULES:
 - "Project Code" on CRL must have NO spaces
