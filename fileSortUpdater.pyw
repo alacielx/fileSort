@@ -3,6 +3,7 @@ import requests
 import os
 import psutil
 import sys
+from tkinter import messagebox
 from downloadProgressBar import downloadProgressBar
 
 def is_process_running(process_name):
@@ -42,5 +43,6 @@ try:
     os.rename(newExeName, exeName)
 except:
     print("Could not rename file")
-    
+
+messagebox.showinfo("fileSort Updater","Updated fileSort.exe\n\nPlease close this window and run again")
 sys.exit()

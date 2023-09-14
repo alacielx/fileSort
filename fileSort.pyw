@@ -1,4 +1,4 @@
-currentVersion = 'v1.5'
+currentVersion = 'v1.6'
 
 from dataclasses import dataclass, field
 import os
@@ -233,7 +233,7 @@ def main():
     # Check if config file exists and has all options
     global configFileName, configProps
     configFileName = 'fileSort.ini'
-    configProps = {"bates_letter" : "", "bates_number" : "", "pdf_folder" : "", "dxf_folder" : "", "min_bates_number" : "0", "max_bates_number" : "-1"}
+    configProps = {"bates_letter" : "", "bates_number" : "", "pdf_folder" : "", "dxf_folder" : "", "min_bates_number" : "0", "max_bates_number" : "-1", "check_for_installs" : "True"}
 
     checkConfig(configFileName, configProps)
     configProps = readConfig(configFileName)
@@ -257,6 +257,7 @@ def main():
     dxfFolder = configProps["dxf_folder"]
     minBatesNumber = configProps["min_bates_number"]
     maxBatesNumber = configProps["max_bates_number"]
+    checkForInstalls = configProps["check_for_installs"]
 
     updateConfig(configFileName, configProps)
 
@@ -297,6 +298,8 @@ def main():
                     glass = "1.4 CLEAR"
                 elif pdfCodeInitial in glass38Keywords and " CLR" in pdfCode:
                     glass = "3.8 CLEAR"
+                else:
+                    glass = "SPECIAL"
                 
                 
                 foundOrder = False
@@ -377,7 +380,7 @@ def main():
         if not order.glassOrderFileName:
             missingGlassOrders.add(order.uniqueCode)
             skipOrder = True
-        elif not order.installationFileName and not order.glassType == "MIR":
+        elif not order.installationFileName and not order.glassType == "MIR" and checkForInstalls == "True":
             missingInstallations.add(order.uniqueCode)
             skipOrder = True
        
@@ -402,15 +405,16 @@ def main():
                     movedOrders+=1
                 else:
                     order.moveGlassOrders()
-                    order.moveInstalls()
+                    if checkForInstalls == "True":
+                        order.moveInstalls()
                     movedOrders+=1
             except:
                 continue
                     
     result = []
 
-    if not orders:
-        result.append("No orders were found.")
+    if movedOrders == 0:
+        result.append("No orders were moved.")
     else:
         if movedOrders > 0:
             result.append(f"Moved {movedOrders} order(s)")
