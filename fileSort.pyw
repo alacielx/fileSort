@@ -58,12 +58,13 @@ class Order:
         self.delDxfs()
     
     def moveInstalls(self):
-        installFilePath = os.path.join(self.pdfFolder, self.installationFileName)
-        installFolder = os.path.join(self.pdfFolder, "Installation Sheets")
-        newInstallFilePath = os.path.join(installFolder, self.installationFileName)
-        
-        os.makedirs(installFolder, exist_ok=True)
-        shutil.move(installFilePath, newInstallFilePath)
+        if not self.glassType == "MIR":
+            installFilePath = os.path.join(self.pdfFolder, self.installationFileName)
+            installFolder = os.path.join(self.pdfFolder, "Installation Sheets")
+            newInstallFilePath = os.path.join(installFolder, self.installationFileName)
+            
+            os.makedirs(installFolder, exist_ok=True)
+            shutil.move(installFilePath, newInstallFilePath)
             
     def copyDxfs(self, newOrderFolder):
         for fsFile in self.fsMatchesFileName:
@@ -257,7 +258,7 @@ def main():
     dxfFolder = configProps["dxf_folder"]
     minBatesNumber = configProps["min_bates_number"]
     maxBatesNumber = configProps["max_bates_number"]
-    checkForInstalls = configProps["check_for_installs"]
+    checkForInstalls = configProps["check_for_installs"].upper()
 
     updateConfig(configFileName, configProps)
 
@@ -273,6 +274,7 @@ def main():
     # Get pdf name and sort data into list of orders
     for pdfFile in os.listdir(pdfFolder):
         if pdfFile.lower().endswith(".pdf"):
+            
             # Get glass order details
             if pdfFile.startswith(glassOrderPrefix):
                 try:
@@ -380,7 +382,8 @@ def main():
         if not order.glassOrderFileName:
             missingGlassOrders.add(order.uniqueCode)
             skipOrder = True
-        elif not order.installationFileName and not order.glassType == "MIR" and checkForInstalls == "True":
+            continue
+        elif not order.installationFileName and not order.glassType == "MIR" and checkForInstalls == "TRUE":
             missingInstallations.add(order.uniqueCode)
             skipOrder = True
        
@@ -400,14 +403,10 @@ def main():
         # Move Glass Order and installs
         if not skipOrder:
             try:
-                if order.glassType == "MIR":
-                    order.moveGlassOrders()
-                    movedOrders+=1
-                else:
-                    order.moveGlassOrders()
-                    if checkForInstalls == "True":
-                        order.moveInstalls()
-                    movedOrders+=1
+                order.moveGlassOrders()
+                if checkForInstalls == "TRUE":
+                    order.moveInstalls()
+                movedOrders+=1
             except:
                 continue
                     
@@ -416,21 +415,20 @@ def main():
     if movedOrders == 0:
         result.append("No orders were moved.")
     else:
-        if movedOrders > 0:
-            result.append(f"Moved {movedOrders} order(s)")
-            
-        if missingGlassOrders:
-            result.append("Missing Glass Order(s):\n" + "\n".join(sorted(missingGlassOrders)))
-            
-        if missingInstallations:
-            result.append("Missing Installation(s):\n" + "\n".join(sorted(missingInstallations)))
+        result.append(f"Moved {movedOrders} order(s)")
         
-        if missingDxfs:
-            result.append("Missing DXF(s):\n" + "\n".join(sorted(missingDxfs)))
-            
-        if extraDxfs:
-            result.append("Extra DXF(s):\n" + "\n".join(sorted(extraDxfs)))
+    if missingGlassOrders:
+        result.append("Missing Glass Order(s):\n" + "\n".join(sorted(missingGlassOrders)))
+        
+    if missingInstallations:
+        result.append("Missing Installation(s):\n" + "\n".join(sorted(missingInstallations)))
     
+    if missingDxfs:
+        result.append("Missing DXF(s):\n" + "\n".join(sorted(missingDxfs)))
+        
+    if extraDxfs:
+        result.append("Extra DXF(s):\n" + "\n".join(sorted(extraDxfs)))
+
     result.append(f"Last bates number used: {int(batesNumber) - 1}")
     root = tk.Tk()
     root.withdraw()
