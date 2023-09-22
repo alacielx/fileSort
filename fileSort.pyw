@@ -17,7 +17,8 @@ class Order:
     dxfFolder: str
     fsCode: str
     fscCode: str
-    glassType: str
+    glassThickness: str = None
+    glassType: str = None
     fsMatchesFileName: list = field(default_factory=list)
     fscMatchesFileName: list = field(default_factory=list)
     installationFileName: str = None
@@ -85,6 +86,23 @@ class Order:
         for fscFile in self.fscMatchesFileName:
             fscFilePath = os.path.join(self.dxfFolder, fscFile)
             os.remove(fscFilePath)
+    
+    def checkGlassOrder(self):
+        glassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName[0])
+        
+        self.glassOrderFileName, glassTypes = separatePdfPages(os.path.join(self.pdfFolder, self.glassOrderFileName[0]))
+        
+        for glassOrderFile in self.glassOrderFileName:
+            glassOrderFilePath = os.path.join(self.pdfFolder, glassOrderFile)
+            newOrderFolder = os.path.join(self.pdfFolder, glassTypes[glassOrderFile])
+            newGlassOrderFilePath = os.path.join(newOrderFolder, glassOrderFile)
+            
+            os.makedirs(newOrderFolder, exist_ok=True)
+            shutil.move(glassOrderFilePath, newGlassOrderFilePath)
+            self.copyDxfs(newOrderFolder)
+        
+        self.delDxfs()
+        
            
 def batesNumberPages(existingPage):
     global batesNumber, minBatesNumber, maxBatesNumber
@@ -266,10 +284,22 @@ def main():
     installPrefix = "Installation - "
     orders = []
 
-    glass14Keywords = ["V", "S"]
-    glass38Keywords = ["R"]
-    glassMirKeywords = ["M", "L"]
-    glassSpecialKeywords = ["HYBRID", "VPLAT", "V-PLAT"]
+    glassTypes = {
+        "CLEAR" : ["CLR", "CL", "CLEAR"],
+        "AGI CLEAR" : ["AGI CLR", "AGICLR", "AGI CLEAR", "AGICLEAR"],
+        "RAIN" : ["RN", "RAIN"],
+        "OBSCURE" : ["OBS", "OBSCURE"],
+        "MIRROR" : ["MIR"]
+    }
+    glassThickness = {
+        "1.4" : ["V", "S", "M", "L"],
+        "3.8" : ["R"],
+        "HYBRID" : ["HYBRID", "VPLAT", "V-PLAT"]
+    }
+    # glass14Keywords = ["V", "S"]
+    # glass38Keywords = ["R"]
+    # glassMirKeywords = ["M", "L"]
+    # glassSpecialKeywords = ["HYBRID", "VPLAT", "V-PLAT"]
     
     # Get pdf name and sort data into list of orders
     for pdfFile in os.listdir(pdfFolder):
