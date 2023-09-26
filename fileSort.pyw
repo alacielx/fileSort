@@ -1,4 +1,4 @@
-currentVersion = 'v1.7'
+currentVersion = 'v1.71'
 
 from dataclasses import dataclass, field
 import os
@@ -23,6 +23,7 @@ class Order:
     fsMatchesFileName: list = field(default_factory=list)
     fscMatchesFileName: list = field(default_factory=list)
     installationFileName: str = None
+    glassMakeupPdfs: dict = field(default_factory=dict)
     
     def addFsMatch(self, fileName):
         self.fsMatchesFileName.append(fileName)
@@ -32,6 +33,9 @@ class Order:
         
     def checkGlassOrder(self):
         glassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName[0])
+        
+        # Remove extra pages
+        processPdfCleanUp(glassOrderFilePath)
         
         pdfOutputs = processPdfGlassType(glassOrderFilePath, self)
         
@@ -43,8 +47,12 @@ class Order:
             
             for glassMakeup, pdfOutput in pdfOutputs.items():
                 newPdfPath = os.path.splitext(glassOrderFilePath)
-                newPdfPath = newPdfPath[0] + " " + str(glassMakeup) + newPdfPath[1]
-                
+                if self.glassType == "HYBRID":
+                    newPdfPath = newPdfPath[0] + " " + str(glassMakeup) + newPdfPath[1]
+                    os.remove(glassOrderFilePath)
+                else:
+                    newPdfPath = glassOrderFilePath
+                    
                 newPdfName = os.path.split(newPdfPath)[1]
                 
                 if not newPdfName in newPdfNames:
@@ -56,14 +64,11 @@ class Order:
                 pdfOutput.write(outputStream)
                 outputStream.close()
         else:
-            raise ValueError("Project Name does not match Glass Order glass type.")
+            raise ValueError("Project Name does not match Glass Order glass type. ie. CLR, OBS, RN")
         
         self.glassOrderFileName = newPdfNames
+        self.glassMakeupPdfs = glassMakeupPdfs
         
-        os.remove(glassOrderFilePath)
-        
-        return glassMakeupPdfs
-    
     def checkProjectName(self):
         global glassOrderPrefix
         glassThickness = None
@@ -108,16 +113,42 @@ class Order:
                 glassThickness = "HYBRID"
                 
         return glassThickness, glassType
+    
+    def checkMissingInfo(self):
+        skipOrder = False
+        
+        if self.glassType == "MIRROR":
+            if not self.fsMatchesFileName and not self.fscMatchesFileName:
+                missingDxfs.add(self.fsCode)
+                missingDxfs.add(self.fscCode)
+                skipOrder = True
+        else:
+            if not self.fsMatchesFileName:
+                missingDxfs.add(self.fsCode)
+                skipOrder = True
+            if not self.fscMatchesFileName:
+                missingDxfs.add(self.fscCode)
+                skipOrder = True
+        
+        if not self.glassType == "MIRROR" and not self.installationFileName:
+            missingInstallations.add(self.uniqueCode)
+            skipOrder = True
+            
+        return skipOrder
                 
     def moveGlassOrders(self):
         glassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName[0])
         
-        # Remove extra pages
-        processPdfCleanUp(glassOrderFilePath)
-        
         # Get glass types from glass order, checks if it matches glass type from project name / if it's hybrid
-        glassMakeupPdfs = self.checkGlassOrder()
-            
+        glassMakeupPdfs = self.glassMakeupPdfs
+        
+        skipOrder = False
+        
+        
+        
+        if skipOrder == True:
+            raise ValueError
+        
         for glassOrderPdfName, glassMakeup in glassMakeupPdfs.items():
             glassOrderFilePath = os.path.join(self.pdfFolder, glassOrderPdfName)
             newOrderFolder = os.path.join(self.pdfFolder, glassMakeup)
@@ -126,7 +157,7 @@ class Order:
             os.makedirs(newOrderFolder, exist_ok=True)
             shutil.move(glassOrderFilePath, newGlassOrderFilePath)
             
-            if not self.glassType == "MIR":
+            if not self.glassType == "MIRROR":
                 processPdfBatesNumber(newGlassOrderFilePath)
             
             self.copyDxfs(newOrderFolder)
@@ -134,7 +165,7 @@ class Order:
         self.delDxfs()
     
     def moveInstalls(self):
-        if not self.glassType == "MIR":
+        if not self.glassType == "MIRROR":
             installFilePath = os.path.join(self.pdfFolder, self.installationFileName)
             installFolder = os.path.join(self.pdfFolder, "Installation Sheets")
             newInstallFilePath = os.path.join(installFolder, self.installationFileName)
@@ -423,51 +454,40 @@ def main():
 
     # Check orders to move
     movedOrders = 0
+    global missingGlassOrders, missingInstallations, missingDxfs
     missingGlassOrders = set()
     missingInstallations = set()
     missingDxfs = set()
     
     errorMessages = []
-    
+
     for order in orders:
         assert isinstance(order, Order)
         
-        # Check for missing information
-        skipOrder = False
-        
         if not order.glassOrderFileName:
             missingGlassOrders.add(order.uniqueCode)
-            skipOrder = True
             continue
-        elif not order.installationFileName and not order.glassType == "MIR" and checkForInstalls == "TRUE":
-            missingInstallations.add(order.uniqueCode)
-            skipOrder = True
-       
-        if order.glassType == "MIR":
-            if not order.fsMatchesFileName and not order.fscMatchesFileName:
-                missingDxfs.add(order.fsCode)
-                missingDxfs.add(order.fscCode)
-                skipOrder = True
-        else:
-            if not order.fsMatchesFileName:
-                missingDxfs.add(order.fsCode)
-                skipOrder = True
-            if not order.fscMatchesFileName:
-                missingDxfs.add(order.fscCode)
-                skipOrder = True
+        
+        try:
+            order.checkGlassOrder()
             
-        # Move Glass Order and installs
-        if not skipOrder:
-            try:
-                order.moveGlassOrders()
-                if checkForInstalls == "TRUE":
-                    order.moveInstalls()
-                movedOrders+=1
-            except ValueError as e:
-                errorMessages.append(e.args[0])
-                print(e.args[0])
+            
+            # Check for missing information
+            if order.checkMissingInfo():
                 continue
-                    
+            
+            order.moveGlassOrders()
+            
+            if checkForInstalls == "TRUE":
+                order.moveInstalls()
+                
+            movedOrders+=1
+            
+        except ValueError as e:
+            errorMessages.append(e.args[0])
+            print(e.args[0])
+            continue
+                
     result = []
 
     if movedOrders == 0:
