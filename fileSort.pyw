@@ -1,4 +1,4 @@
-currentVersion = 'v1.71'
+currentVersion = 'v1.72'
 
 from dataclasses import dataclass, field
 import os
@@ -12,7 +12,7 @@ from functions import *
 @dataclass
 class Order:
     uniqueCode: str
-    glassOrderFileName: list
+    glassOrderFileName: str
     pdfFolder: str
     dxfFolder: str
     fsCode: str
@@ -23,7 +23,8 @@ class Order:
     fsMatchesFileName: list = field(default_factory=list)
     fscMatchesFileName: list = field(default_factory=list)
     installationFileName: str = None
-    glassMakeupPdfs: dict = field(default_factory=dict)
+    # glassMakeupPdfs: dict = field(default_factory=dict)
+    pdfOutputs: dict = field(default_factory=dict)
     
     def addFsMatch(self, fileName):
         self.fsMatchesFileName.append(fileName)
@@ -31,43 +32,39 @@ class Order:
     def addFscMatch(self, fileName):
         self.fscMatchesFileName.append(fileName)
         
-    def checkGlassOrder(self):
-        glassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName[0])
+    def isOrderValid(self):
+        glassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName)
         
         # Remove extra pages
         processPdfCleanUp(glassOrderFilePath)
         
-        pdfOutputs = processPdfGlassType(glassOrderFilePath, self)
+        self.pdfOutputs = processPdfGlassType(glassOrderFilePath, self)
+        
+        if self.isMissingInfo():
+            return False
         
         projectNameGlassThickness, projectNameGlassType = self.checkProjectName()
         
-        if (self.glassThickness == projectNameGlassThickness and self.glassType == projectNameGlassType) or (not projectNameGlassThickness == "HYBRID" and self.glassType == projectNameGlassType):
-            newPdfNames = []
-            glassMakeupPdfs = {}
-            
-            for glassMakeup, pdfOutput in pdfOutputs.items():
-                newPdfPath = os.path.splitext(glassOrderFilePath)
-                if self.glassType == "HYBRID":
-                    newPdfPath = newPdfPath[0] + " " + str(glassMakeup) + newPdfPath[1]
-                    os.remove(glassOrderFilePath)
-                else:
-                    newPdfPath = glassOrderFilePath
-                    
-                newPdfName = os.path.split(newPdfPath)[1]
-                
-                if not newPdfName in newPdfNames:
-                    newPdfNames.append(newPdfName)
-                
-                glassMakeupPdfs[newPdfName] = glassMakeup
-                
-                outputStream = open(newPdfPath, "wb")
-                pdfOutput.write(outputStream)
-                outputStream.close()
+        if (self.glassThickness == projectNameGlassThickness or projectNameGlassThickness == None) and self.glassType == projectNameGlassType:
+            return True
+        elif projectNameGlassType == None:
+            errorMessages.add(rf"{self.uniqueCode}: Enter correct glass type in Project Name.")
+            return False
+        elif self.glassThickness == "HYBRID":
+            errorMessages.add(rf"{self.uniqueCode}: Glass Order has different glass thicknesses.")
+            return False
+        elif self.glassType == "HYBRID":
+            errorMessages.add(rf"{self.uniqueCode}: Glass Order has different glass types.")
+            return False
+        elif not self.glassThickness == projectNameGlassThickness:
+            errorMessages.add(rf"{self.uniqueCode}: Glass thickness does not match shower type.")
+            return False
+        elif not self.glassType == projectNameGlassType:
+            errorMessages.add(rf"{self.uniqueCode}: Glass type does not match Project Name.")
+            return False
         else:
-            raise ValueError("Project Name does not match Glass Order glass type. ie. CLR, OBS, RN")
-        
-        self.glassOrderFileName = newPdfNames
-        self.glassMakeupPdfs = glassMakeupPdfs
+            errorMessages.add(rf"{self.uniqueCode}: Please check glass thickness/type.")
+            return False
         
     def checkProjectName(self):
         global glassOrderPrefix
@@ -114,7 +111,7 @@ class Order:
                 
         return glassThickness, glassType
     
-    def checkMissingInfo(self):
+    def isMissingInfo(self):
         skipOrder = False
         
         if self.glassType == "MIRROR":
@@ -137,30 +134,39 @@ class Order:
         return skipOrder
                 
     def moveGlassOrders(self):
-        glassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName[0])
         
-        # Get glass types from glass order, checks if it matches glass type from project name / if it's hybrid
-        glassMakeupPdfs = self.glassMakeupPdfs
-        
-        skipOrder = False
-        
-        
-        
-        if skipOrder == True:
-            raise ValueError
-        
-        for glassOrderPdfName, glassMakeup in glassMakeupPdfs.items():
-            glassOrderFilePath = os.path.join(self.pdfFolder, glassOrderPdfName)
-            newOrderFolder = os.path.join(self.pdfFolder, glassMakeup)
-            newGlassOrderFilePath = os.path.join(newOrderFolder, glassOrderPdfName)
+        if len(self.pdfOutputs) > 1:
+            for glassMakeup, pdfOutput in self.pdfOutputs.items():
+                newGlassOrderFileName = os.path.splitext(self.glassOrderFileName)
+                newGlassOrderFileName = newGlassOrderFileName[0] + " " + str(glassMakeup) + newGlassOrderFileName[1]
+                
+                newGlassTypeFolder = os.path.join(self.pdfFolder, glassMakeup)
+                os.makedirs(newGlassTypeFolder, exist_ok=True)
+                
+                newGlassOrderFilePath = os.path.join(newGlassTypeFolder, newGlassOrderFileName)
+                
+                outputStream = open(newGlassOrderFilePath, "wb")
+                pdfOutput.write(outputStream)
+                outputStream.close()
+                if not self.glassType == "MIRROR":
+                    processPdfBatesNumber(newGlassOrderFilePath)
+                self.copyDxfs(newGlassTypeFolder)
             
-            os.makedirs(newOrderFolder, exist_ok=True)
-            shutil.move(glassOrderFilePath, newGlassOrderFilePath)
-            
-            if not self.glassType == "MIRROR":
-                processPdfBatesNumber(newGlassOrderFilePath)
-            
-            self.copyDxfs(newOrderFolder)
+            originalGlassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName)
+            os.remove(originalGlassOrderFilePath)
+        else:
+            for glassMakeup, pdfOutput in self.pdfOutputs.items():
+                glassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName)
+                
+                newGlassTypeFolder = os.path.join(self.pdfFolder, glassMakeup)
+                os.makedirs(newGlassTypeFolder, exist_ok=True)
+                
+                newGlassOrderFilePath = os.path.join(newGlassTypeFolder, self.glassOrderFileName)
+                
+                shutil.move(glassOrderFilePath, newGlassOrderFilePath)
+                if not self.glassType == "MIRROR":
+                    processPdfBatesNumber(newGlassOrderFilePath)
+                self.copyDxfs(newGlassTypeFolder)
         
         self.delDxfs()
     
@@ -299,6 +305,8 @@ def processPdfGlassType(pdfPath, order = Order):
     glassPattern = r"\d{1,2}/\d{1,2}\"\s\w+.*?(?= TEMPERED)"
     
     pdfOutputs = {}
+    glassThicknesses = set()
+    glassTypes = set()
     
     # Separate pages and check glass type
     for pageNum in range(len(pdf.pages)):
@@ -307,6 +315,7 @@ def processPdfGlassType(pdfPath, order = Order):
         pageText = currentPage.extract_text().upper()
         glassPatternMatch = re.findall(glassPattern, pageText)
         
+        
         # Try if None
         try:
             glassPatternMatch = str(glassPatternMatch[0]).upper()
@@ -314,9 +323,11 @@ def processPdfGlassType(pdfPath, order = Order):
             glassPatternMatch = sanitizeName(glassPatternMatch, "")
             
             order.glassThickness = glassPatternMatch.split()[0]
+            glassThicknesses.add(order.glassThickness)
             order.glassType = " ".join(glassPatternMatch.split()[1:])
+            glassTypes.add(order.glassType)
         except:
-            raise ValueError("No glass type found in Glass Order.")
+            raise ValueError(rf"{order.uniqueCode}: No glass type found in Glass Order.")
         
         # Check if already writing a pdf with that glass type
         if not glassPatternMatch in pdfOutputs:
@@ -327,9 +338,11 @@ def processPdfGlassType(pdfPath, order = Order):
         output.add_page(currentPage)
         
         pdfOutputs[glassPatternMatch] = output
-        
-    if len(pdfOutputs) > 1:
+    
+    if len(glassThicknesses) > 1:
         order.glassThickness = "HYBRID"
+        
+    if len(glassTypes) > 1:
         order.glassType = "HYBRID"
         
     return pdfOutputs
@@ -397,7 +410,7 @@ def main():
                     assert isinstance(order, Order)
                     if order.uniqueCode == uniqueCode:
                         foundOrder = True
-                        order.glassOrderFileName = [pdfFile]
+                        order.glassOrderFileName = pdfFile
                         order.pdfFolder = pdfFolder
                         order.dxfFolder = dxfFolder
                         order.fsCode = fsCode
@@ -406,7 +419,7 @@ def main():
                         break
                     
                 if not foundOrder:
-                    orders.append(Order(uniqueCode, [pdfFile], pdfFolder, dxfFolder, fsCode, fscCode, showerCode = showerCode))
+                    orders.append(Order(uniqueCode, pdfFile, pdfFolder, dxfFolder, fsCode, fscCode, showerCode = showerCode))
                     
             # Get installation details
             if pdfFile.startswith(installPrefix):
@@ -454,12 +467,11 @@ def main():
 
     # Check orders to move
     movedOrders = 0
-    global missingGlassOrders, missingInstallations, missingDxfs
+    global missingGlassOrders, missingInstallations, missingDxfs, errorMessages
     missingGlassOrders = set()
     missingInstallations = set()
     missingDxfs = set()
-    
-    errorMessages = []
+    errorMessages = set()
 
     for order in orders:
         assert isinstance(order, Order)
@@ -469,11 +481,8 @@ def main():
             continue
         
         try:
-            order.checkGlassOrder()
-            
-            
-            # Check for missing information
-            if order.checkMissingInfo():
+            # Check glass type and missing information
+            if order.isOrderValid() == False:
                 continue
             
             order.moveGlassOrders()
@@ -484,7 +493,7 @@ def main():
             movedOrders+=1
             
         except ValueError as e:
-            errorMessages.append(e.args[0])
+            errorMessages.add(e.args[0])
             print(e.args[0])
             continue
                 
