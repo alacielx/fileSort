@@ -19,6 +19,7 @@ class Order:
     fscCode: str
     glassThickness: str = None
     glassType: str = None
+    showerCode: str = None
     fsMatchesFileName: list = field(default_factory=list)
     fscMatchesFileName: list = field(default_factory=list)
     installationFileName: str = None
@@ -30,17 +31,18 @@ class Order:
         self.fscMatchesFileName.append(fileName)
         
     def checkGlassOrder(self):
-        pdfPath = os.path.join(self.pdfFolder, self.glassOrderFileName[0])
-        pdfOutputs = processPdfGlassType(pdfPath, self)
+        glassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName[0])
         
-        glassThickness, glassType = self.checkProjectName()
+        pdfOutputs = processPdfGlassType(glassOrderFilePath, self)
         
-        if self.glassThickness == glassThickness and self.glassType == glassType:
+        projectNameGlassThickness, projectNameGlassType = self.checkProjectName()
+        
+        if (self.glassThickness == projectNameGlassThickness and self.glassType == projectNameGlassType) or (not projectNameGlassThickness == "HYBRID" and self.glassType == projectNameGlassType):
             newPdfNames = []
             glassMakeupPdfs = {}
             
             for glassMakeup, pdfOutput in pdfOutputs.items():
-                newPdfPath = os.path.splitext(pdfPath)
+                newPdfPath = os.path.splitext(glassOrderFilePath)
                 newPdfPath = newPdfPath[0] + " " + str(glassMakeup) + newPdfPath[1]
                 
                 newPdfName = os.path.split(newPdfPath)[1]
@@ -54,18 +56,20 @@ class Order:
                 pdfOutput.write(outputStream)
                 outputStream.close()
         else:
-            raise ValueError("Glass type in Project Name does not match Glass Order.")
+            raise ValueError("Project Name does not match Glass Order glass type.")
         
         self.glassOrderFileName = newPdfNames
+        
+        os.remove(glassOrderFilePath)
         
         return glassMakeupPdfs
     
     def checkProjectName(self):
-        
+        global glassOrderPrefix
         glassThickness = None
         glassType = None
         
-        glassOrderFileName = str(self.glassOrderFileName[0]).upper()
+        showerCode = str(self.showerCode).upper()
         
         glassThicknessKeywords = {
             "1.4" : ["V", "S", "M", "L"],
@@ -74,16 +78,18 @@ class Order:
         
         glassTypeKeywords = {
             "CLEAR" : ["CLR", "CL", "CLEAR"],
-            "AGI CLEAR" : ["AGI CLR", "AGICLR", "AGI CLEAR", "AGICLEAR"],
+            "AGI CLEAR" : ["AGI CLR", "AGICLR", "AGI CLEAR", "AGICLEAR", "AGI CL", "AGICL"],
             "RAIN" : ["RN", "RAIN"],
             "OBSCURE" : ["OBS", "OBSCURE"],
+            "SATIN" : ["SATIN", "STN", "SAT", "SN"],
+            "FROSTED" : ["FROSTED", "FROST"],
             "MIRROR" : ["MIR"]
         }
         
         glassHybridKeywords = ["HYBRID", "VPLAT", "V-PLAT"]
     
         # Check if glass order has glass thickness initial keyword to set glassThickness
-        pdfCodeInitial = next((char for char in glassOrderFileName if char != ' '), None)
+        pdfCodeInitial = next((char for char in showerCode if char != ' '), None)
         for thickness, keywords in glassThicknessKeywords.items():
             for keyword in keywords:
                 if pdfCodeInitial in keyword:
@@ -92,13 +98,13 @@ class Order:
         # Check if glass order has glass type keyword to set glassType
         for type, keywords in glassTypeKeywords.items():
             for keyword in keywords:
-                if keyword in glassOrderFileName:
+                if keyword in showerCode:
                     glassType = type
         
         # Check if hybrid to change glassThickness and glassType
         for keyword in glassHybridKeywords:
-            if keyword in glassOrderFileName:
-                glassType = "HYRBID"
+            if keyword in showerCode:
+                glassType = "HYBRID"
                 glassThickness = "HYBRID"
                 
         return glassThickness, glassType
@@ -106,28 +112,23 @@ class Order:
     def moveGlassOrders(self):
         glassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName[0])
         
-        # Remove extra pages and bates number if not mirror
-        doBates = False if self.glassType == "MIR" else True
-        processPdfCleanUp(glassOrderFilePath, doBates)
+        # Remove extra pages
+        processPdfCleanUp(glassOrderFilePath)
         
-        if self.glassType == "SPECIAL":
-            self.glassOrderFileName, glassTypes = processPdfGlassType(os.path.join(self.pdfFolder, self.glassOrderFileName[0]))
+        # Get glass types from glass order, checks if it matches glass type from project name / if it's hybrid
+        glassMakeupPdfs = self.checkGlassOrder()
             
-            for glassOrderFile in self.glassOrderFileName:
-                glassOrderFilePath = os.path.join(self.pdfFolder, glassOrderFile)
-                newOrderFolder = os.path.join(self.pdfFolder, glassTypes[glassOrderFile])
-                newGlassOrderFilePath = os.path.join(newOrderFolder, glassOrderFile)
-                
-                os.makedirs(newOrderFolder, exist_ok=True)
-                shutil.move(glassOrderFilePath, newGlassOrderFilePath)
-                self.copyDxfs(newOrderFolder)
-        else:
-            glassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName[0])
-            newOrderFolder = os.path.join(self.pdfFolder, self.glassType)
-            newGlassOrderFilePath = os.path.join(newOrderFolder, self.glassOrderFileName[0])
+        for glassOrderPdfName, glassMakeup in glassMakeupPdfs.items():
+            glassOrderFilePath = os.path.join(self.pdfFolder, glassOrderPdfName)
+            newOrderFolder = os.path.join(self.pdfFolder, glassMakeup)
+            newGlassOrderFilePath = os.path.join(newOrderFolder, glassOrderPdfName)
             
             os.makedirs(newOrderFolder, exist_ok=True)
             shutil.move(glassOrderFilePath, newGlassOrderFilePath)
+            
+            if not self.glassType == "MIR":
+                processPdfBatesNumber(newGlassOrderFilePath)
+            
             self.copyDxfs(newOrderFolder)
         
         self.delDxfs()
@@ -161,7 +162,7 @@ class Order:
             fscFilePath = os.path.join(self.dxfFolder, fscFile)
             os.remove(fscFilePath)
            
-def batesNumberPages(existingPage):
+def batesNumberPagesOld(existingPage):
     global batesNumber, minBatesNumber, maxBatesNumber
     
     # Create blank pdf
@@ -193,26 +194,68 @@ def batesNumberPages(existingPage):
     
     return existingPage
          
-def processPdfCleanUp(pdfPath, doBates):
+def processPdfCleanUp(pdfPath):
     pdf = PdfReader(pdfPath)
     output = PdfWriter()
 
     stringsToExclude = ["GLASS ORDER", "TEMPLATE"]
 
-    # Loop through each page of the existing PDF
+    # Loop through each page of the existing PDF and remove any page with stringsToExclude
     for pageNum in range(len(pdf.pages)):
         pageText = pdf.pages[pageNum].extract_text().upper()
+        
         if any(s in pageText for s in stringsToExclude):
             continue
+        
+        existingPage = pdf.pages[pageNum]
+        output.add_page(existingPage)
 
+    # Write the output to a new PDF file
+    outputStream = open(pdfPath, "wb")
+    output.write(outputStream)
+    outputStream.close()
+    
+def processPdfBatesNumber(pdfPath):
+    global batesNumber, minBatesNumber, maxBatesNumber
+    pdf = PdfReader(pdfPath)
+    output = PdfWriter()
+
+    # Loop through each page of the existing PDF
+    for pageNum in range(len(pdf.pages)):
+
+        # Create blank pdf
+        packet = io.BytesIO()
+        can = canvas.Canvas(packet, pagesize=letter)
+        
+        # Set the position where you want to add text (in points from bottom-left)
+        batesText = batesLetter + batesNumber
+        batesTextWidth = can.stringWidth(batesText, "Helvetica", 20)
+        
+        x, y = letter[0] - 40 - batesTextWidth, letter[1] - 30  # 1 inch from right, 0.5 inch from top
+        can.setFont("Helvetica",20)
+        can.drawString(x, y, batesText)
+        
+        if maxBatesNumber == '-1':
+            batesNumber = str(int(batesNumber) + 1)
+        else:
+            batesNumber = str(int(batesNumber) + 1) if int(batesNumber)  < int(maxBatesNumber) else minBatesNumber
+            
+        can.save()
+        packet.seek(0)
+        tempPdf = PdfReader(packet)
+    
         # Get the current page from the existing PDF
         existingPage = pdf.pages[pageNum]
         
-        if doBates == True:
-            existingPage = batesNumberPages(existingPage)
+        newPage = tempPdf.pages[0]
+        existingPage.merge_page(newPage)
 
         output.add_page(existingPage)
-
+        
+            # Update bates number
+        configProps["bates_number"] = batesNumber
+        updateConfig(configFileName, configProps)
+    
     # Write the output to a new PDF file
     outputStream = open(pdfPath, "wb")
     output.write(outputStream)
@@ -222,7 +265,7 @@ def processPdfGlassType(pdfPath, order = Order):
     pdf = PdfReader(pdfPath)
 
     # Match example: >1/4" AGI Clear< Tempered
-    glassPattern = r"\d{1,2}/\d{1,2}\"\s\w+.*?(?= Tempered)"
+    glassPattern = r"\d{1,2}/\d{1,2}\"\s\w+.*?(?= TEMPERED)"
     
     pdfOutputs = {}
     
@@ -235,7 +278,7 @@ def processPdfGlassType(pdfPath, order = Order):
         
         # Try if None
         try:
-            glassPatternMatch = str(glassPatternMatch[0])
+            glassPatternMatch = str(glassPatternMatch[0]).upper()
             glassPatternMatch = glassPatternMatch.replace("/", ".")
             glassPatternMatch = sanitizeName(glassPatternMatch, "")
             
@@ -255,8 +298,8 @@ def processPdfGlassType(pdfPath, order = Order):
         pdfOutputs[glassPatternMatch] = output
         
     if len(pdfOutputs) > 1:
-        order.glassThickness = "HYRBID"
-        order.glassType = "HYRBID"
+        order.glassThickness = "HYBRID"
+        order.glassType = "HYBRID"
         
     return pdfOutputs
 
@@ -294,14 +337,10 @@ def main():
 
     updateConfig(configFileName, configProps)
 
+    global glassOrderPrefix
     glassOrderPrefix = "Glass Order - "
     installPrefix = "Installation - "
     orders = []
-
-    # glass14Keywords = ["V", "S"]
-    # glass38Keywords = ["R"]
-    # glassMirKeywords = ["M", "L"]
-    # glassSpecialKeywords = ["HYBRID", "VPLAT", "V-PLAT"]
     
     # Get pdf name and sort data into list of orders
     for pdfFile in os.listdir(pdfFolder):
@@ -316,6 +355,8 @@ def main():
                     continue
                 
                 uniqueCode = pdfCode[:spaceIndex]
+                
+                showerCode = pdfCode[spaceIndex:]
 
                 fsCode = pdfCode[:spaceIndex] + "_FS" if spaceIndex > 0 else pdfCode
                 fscCode = pdfCode[:spaceIndex] + "_FSC" if spaceIndex > 0 else pdfCode
@@ -330,10 +371,11 @@ def main():
                         order.dxfFolder = dxfFolder
                         order.fsCode = fsCode
                         order.fscCode = fscCode
+                        order.showerCode = showerCode
                         break
                     
                 if not foundOrder:
-                    orders.append(Order(uniqueCode, [pdfFile], pdfFolder, dxfFolder, fsCode, fscCode))
+                    orders.append(Order(uniqueCode, [pdfFile], pdfFolder, dxfFolder, fsCode, fscCode, showerCode = showerCode))
                     
             # Get installation details
             if pdfFile.startswith(installPrefix):
@@ -385,14 +427,13 @@ def main():
     missingInstallations = set()
     missingDxfs = set()
     
+    errorMessages = []
+    
     for order in orders:
         assert isinstance(order, Order)
         
         # Check for missing information
         skipOrder = False
-        
-        if not order.glassType:
-            skipOrder = True
         
         if not order.glassOrderFileName:
             missingGlassOrders.add(order.uniqueCode)
@@ -422,7 +463,9 @@ def main():
                 if checkForInstalls == "TRUE":
                     order.moveInstalls()
                 movedOrders+=1
-            except:
+            except ValueError as e:
+                errorMessages.append(e.args[0])
+                print(e.args[0])
                 continue
                     
     result = []
@@ -443,6 +486,9 @@ def main():
         
     if extraDxfs:
         result.append("Extra DXF(s):\n" + "\n".join(sorted(extraDxfs)))
+        
+    if errorMessages:
+        result.append("Errors:\n" + "\n".join(sorted(errorMessages)))
 
     result.append(f"Last bates number used: {int(batesNumber) - 1}")
     root = tk.Tk()
