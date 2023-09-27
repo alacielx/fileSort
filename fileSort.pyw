@@ -1,4 +1,4 @@
-currentVersion = 'v1.72'
+currentVersion = 'v1.73'
 
 from dataclasses import dataclass, field
 import os
@@ -44,7 +44,7 @@ class Order:
         
         projectNameGlassThickness, projectNameGlassType = self.checkProjectName()
         
-        if (self.glassThickness == projectNameGlassThickness or projectNameGlassThickness == None) and self.glassType == projectNameGlassType:
+        if (self.glassThickness == projectNameGlassThickness or projectNameGlassThickness == None) and (self.glassType == projectNameGlassType or projectNameGlassType == "HYBRID"):
             return True
         elif projectNameGlassType == None:
             errorMessages.add(rf"{self.uniqueCode}: Enter correct glass type in Project Name.")
