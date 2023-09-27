@@ -44,7 +44,7 @@ class Order:
         
         projectNameGlassThickness, projectNameGlassType = self.checkProjectName()
         
-        if (self.glassThickness == projectNameGlassThickness or projectNameGlassThickness == None) and (self.glassType == projectNameGlassType or projectNameGlassType == "HYBRID"):
+        if (self.glassThickness == projectNameGlassThickness or projectNameGlassThickness == None or projectNameGlassThickness == "HYBRID") and (self.glassType == projectNameGlassType or projectNameGlassType == "HYBRID" ):
             return True
         elif projectNameGlassType == None:
             errorMessages.add(rf"{self.uniqueCode}: Enter correct glass type in Project Name.")
