@@ -23,7 +23,6 @@ class Order:
     fsMatchesFileName: list = field(default_factory=list)
     fscMatchesFileName: list = field(default_factory=list)
     installationFileName: str = None
-    # glassMakeupPdfs: dict = field(default_factory=dict)
     pdfOutputs: dict = field(default_factory=dict)
     
     def addFsMatch(self, fileName):
