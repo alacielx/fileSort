@@ -126,7 +126,7 @@ class Order:
                 missingDxfs.add(self.fscCode)
                 skipOrder = True
         
-        if not self.glassType == "MIRROR" and not self.installationFileName:
+        if not self.glassType == "MIRROR" and not self.installationFileName and checkForInstalls == "TRUE":
             missingInstallations.add(self.uniqueCode)
             skipOrder = True
             
@@ -369,7 +369,7 @@ def main():
     if not configProps["bates_number"] or not str(configProps["bates_number"]).isnumeric():
         configProps["bates_number"] = askInput("Last bates number:", type = int)
 
-    global batesLetter, batesNumber, pdfFolder, dxfFolder, minBatesNumber, maxBatesNumber
+    global batesLetter, batesNumber, pdfFolder, dxfFolder, minBatesNumber, maxBatesNumber, checkForInstalls
     batesLetter = configProps["bates_letter"]
     batesNumber = configProps["bates_number"]
     pdfFolder = configProps["pdf_folder"]
