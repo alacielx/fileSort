@@ -45,6 +45,7 @@ def updateConfig(config_file_name, config_props:dict):
     
     with open(config_file_name, 'w') as config_file:
         config.write(config_file)
+        config_file.flush()
     
 def readConfig(config_file_name):
     config_props = {}

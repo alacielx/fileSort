@@ -1,4 +1,4 @@
-currentVersion = 'v1.73'
+currentVersion = 'v1.74'
 
 from dataclasses import dataclass, field
 import os
@@ -504,13 +504,13 @@ def main():
         result.append(f"Moved {movedOrders} order(s)")
         
     if missingGlassOrders:
-        result.append("Missing Glass Order(s):\n" + "\n".join(sorted(missingGlassOrders)))
+        result.append(f"{pdfFolder}\nMissing Glass Order(s):\n" + "\n-".join(sorted(missingGlassOrders)))
         
     if missingInstallations:
-        result.append("Missing Installation(s):\n" + "\n".join(sorted(missingInstallations)))
+        result.append(f"{pdfFolder}\nMissing Installation(s):\n" + "\n".join(sorted(missingInstallations)))
     
     if missingDxfs:
-        result.append("Missing DXF(s):\n" + "\n".join(sorted(missingDxfs)))
+        result.append(f"{dxfFolder}\nMissing DXF(s):\n" + "\n".join(sorted(missingDxfs)))
         
     if extraDxfs:
         result.append("Extra DXF(s):\n" + "\n".join(sorted(extraDxfs)))
