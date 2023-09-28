@@ -6,6 +6,7 @@ import re
 import shutil
 import tkinter as tk
 from tkinter import messagebox
+import logging
 import sys
 from functions import *
 
@@ -24,6 +25,7 @@ class Order:
     fscMatchesFileName: list = field(default_factory=list)
     installationFileName: str = None
     pdfOutputs: dict = field(default_factory=dict)
+    skipOrder: bool = False
     
     def addFsMatch(self, fileName):
         self.fsMatchesFileName.append(fileName)
@@ -39,7 +41,9 @@ class Order:
         
         self.pdfOutputs = processPdfGlassType(glassOrderFilePath, self)
         
-        if self.isMissingInfo():
+        self.checkMissingInfo()
+        
+        if self.skipOrder:
             return False
         
         projectNameGlassThickness, projectNameGlassType = self.checkProjectName()
@@ -101,6 +105,15 @@ class Order:
             for keyword in keywords:
                 if keyword in showerCode:
                     glassType = type
+                    
+        # Create a regex pattern that matches isolated keywords
+        pattern = r'\b(?:' + '|'.join(re.escape(keyword) for keywords in glassTypeKeywords.values() for keyword in keywords) + r')\b'
+
+        # Check if glass order has glass type keyword to set glassType
+        for type, keywords in glassTypeKeywords.items():
+            if re.search(pattern, showerCode):
+                glassType = type
+                break  # If a match is found, exit the loop
         
         # Check if hybrid to change glassThickness and glassType
         for keyword in glassHybridKeywords:
@@ -110,27 +123,26 @@ class Order:
                 
         return glassThickness, glassType
     
-    def isMissingInfo(self):
-        skipOrder = False
+    def checkMissingInfo(self):
         
         if self.glassType == "MIRROR":
             if not self.fsMatchesFileName and not self.fscMatchesFileName:
                 missingDxfs.add(self.fsCode)
                 missingDxfs.add(self.fscCode)
-                skipOrder = True
+                self.skipOrder = True
         else:
             if not self.fsMatchesFileName:
                 missingDxfs.add(self.fsCode)
-                skipOrder = True
+                self.skipOrder = True
             if not self.fscMatchesFileName:
                 missingDxfs.add(self.fscCode)
-                skipOrder = True
+                self.skipOrder = True
         
         if not self.glassType == "MIRROR" and not self.installationFileName and checkForInstalls == "TRUE":
             missingInstallations.add(self.uniqueCode)
-            skipOrder = True
+            self.skipOrder = True
             
-        return skipOrder
+        return self.skipOrder
                 
     def moveGlassOrders(self):
         
@@ -380,6 +392,12 @@ def main():
 
     updateConfig(configFileName, configProps)
 
+    global missingGlassOrders, missingInstallations, missingDxfs, errorMessages
+    missingGlassOrders = set()
+    missingInstallations = set()
+    missingDxfs = set()
+    errorMessages = set()
+    
     global glassOrderPrefix
     glassOrderPrefix = "Glass Order - "
     installPrefix = "Installation - "
@@ -408,14 +426,19 @@ def main():
                 for order in orders:
                     assert isinstance(order, Order)
                     if order.uniqueCode == uniqueCode:
-                        foundOrder = True
-                        order.glassOrderFileName = pdfFile
-                        order.pdfFolder = pdfFolder
-                        order.dxfFolder = dxfFolder
-                        order.fsCode = fsCode
-                        order.fscCode = fscCode
-                        order.showerCode = showerCode
-                        break
+                        if order.glassOrderFileName:
+                            errorMessages.add(f"Duplicate order: {uniqueCode}")
+                            order.skipOrder = True
+                            break
+                        else:
+                            foundOrder = True
+                            order.glassOrderFileName = pdfFile
+                            order.pdfFolder = pdfFolder
+                            order.dxfFolder = dxfFolder
+                            order.fsCode = fsCode
+                            order.fscCode = fscCode
+                            order.showerCode = showerCode
+                            break
                     
                 if not foundOrder:
                     orders.append(Order(uniqueCode, pdfFile, pdfFolder, dxfFolder, fsCode, fscCode, showerCode = showerCode))
@@ -461,17 +484,12 @@ def main():
                         order.addFscMatch(dxfFile)
                         foundOrder = True
                         
-            if not foundOrder:                
-                extraDxfs.add(dxfFile)
+            if not foundOrder:            
+                extraDxfs.add(dxfCodeExt)
 
     # Check orders to move
     movedOrders = 0
-    global missingGlassOrders, missingInstallations, missingDxfs, errorMessages
-    missingGlassOrders = set()
-    missingInstallations = set()
-    missingDxfs = set()
-    errorMessages = set()
-
+    
     for order in orders:
         assert isinstance(order, Order)
         
@@ -524,5 +542,13 @@ def main():
     messagebox.showinfo(f"fileSort {currentVersion}", "\n\n".join(result))
 
 if __name__ == "__main__":
-    updateExecutable(currentVersion, "fileSort")
-    main()
+    log_filename = 'error_log.txt'
+    logging.basicConfig(filename=log_filename, level=logging.ERROR, format='%(asctime)s - %(levelname)s: %(message)s')
+
+    try:
+        updateExecutable(currentVersion, "fileSort")
+        main()
+    except ValueError as e:
+        error_message = e.args[0]
+        logging.error(error_message)
+        print(error_message)
