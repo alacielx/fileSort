@@ -1,4 +1,4 @@
-currentVersion = 'v1.76'
+currentVersion = 'v1.78'
 
 from dataclasses import dataclass, field
 import os
@@ -88,7 +88,7 @@ class Order:
             "OBSCURE" : ["OBS", "OBSCURE"],
             "SATIN" : ["SATIN", "STN", "SAT", "SN"],
             "FROSTED" : ["FROSTED", "FROST"],
-            "MIRROR" : ["MIR"]
+            "MIRROR" : ["MIRCT", "MIRSQ", "MIRSQCT", "LMIRSQCT", "LMIRCT", "MIR"]
         }
         
         glassHybridKeywords = ["HYBRID", "VPLAT", "V-PLAT"]
@@ -100,18 +100,17 @@ class Order:
                 if pdfCodeInitial in keyword:
                     glassThickness = thickness
         
-        # Check if glass order has glass type keyword to set glassType
-        for type, keywords in glassTypeKeywords.items():
-            for keyword in keywords:
-                if keyword in showerCode:
-                    glassType = type
-                    
-        # Create a regex pattern that matches isolated keywords
-        pattern = r'\b(?:' + '|'.join(re.escape(keyword) for keywords in glassTypeKeywords.values() for keyword in keywords) + r')\b'
+        # Create a regex pattern that matches isolated keywords in each glass type
+        glassTypePatterns = {}
+        for type, typeKeywords in glassTypeKeywords.items():
+            glassTypePatterns[type] = r'\b(?:' + '|'.join(typeKeywords) + r')\b'
+        
+        # # Create a regex pattern that matches isolated keywords
+        # pattern = r'\b(?:' + '|'.join(re.escape(keyword) for keywords in glassTypeKeywords.values() for keyword in keywords) + r')\b'
 
         # Check if glass order has glass type keyword to set glassType
-        for type, keywords in glassTypeKeywords.items():
-            if re.search(pattern, showerCode):
+        for type, typePattern in glassTypePatterns.items():
+            if re.search(typePattern, showerCode):
                 glassType = type
                 break  # If a match is found, exit the loop
         
@@ -146,12 +145,16 @@ class Order:
                 
     def moveGlassOrders(self):
         
+        # hourMinute = time.strftime("%H.%M")
+        
         if len(self.pdfOutputs) > 1:
             for glassMakeup, pdfOutput in self.pdfOutputs.items():
                 newGlassOrderFileName = os.path.splitext(self.glassOrderFileName)
                 newGlassOrderFileName = newGlassOrderFileName[0] + " " + str(glassMakeup) + newGlassOrderFileName[1]
                 
+                
                 newGlassTypeFolder = os.path.join(self.pdfFolder, glassMakeup)
+                # + " " + hourMinute
                 os.makedirs(newGlassTypeFolder, exist_ok=True)
                 
                 newGlassOrderFilePath = os.path.join(newGlassTypeFolder, newGlassOrderFileName)
@@ -170,6 +173,7 @@ class Order:
                 glassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName)
                 
                 newGlassTypeFolder = os.path.join(self.pdfFolder, glassMakeup)
+                # + " " + hourMinute
                 os.makedirs(newGlassTypeFolder, exist_ok=True)
                 
                 newGlassOrderFilePath = os.path.join(newGlassTypeFolder, self.glassOrderFileName)
