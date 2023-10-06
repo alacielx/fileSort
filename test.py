@@ -1,14 +1,26 @@
-import tkinter
-from tkinter import ttk
+from datetime import datetime
 
-import sv_ttk
+def getBatchTime():
+    oldTime = datetime.strptime("2023-10-05 18:35", "%Y-%m-%d %H:%M")
+    # oldTime = datetime.strptime(lastBatchTime, "%Y-%m-%d %H:%M")
+    currentTime = datetime.now()
+    
+    oldTimeHourMinute = oldTime.strftime("%I.%M")
+    currentTimeStr = currentTime.strftime("%Y-%m-%d %H:%M")
+    currentTimeHourMinute = currentTime.strftime("%I.%M")
 
-root = tkinter.Tk()
-
-button = ttk.Button(root, text="Click me!")
-button.pack()
-
-# This is where the magic happens
-sv_ttk.set_theme("dark")
-
-root.mainloop()
+    try:
+        timeDifference = currentTime - oldTime
+    except:
+        # configProps["last_batch_time"] = currentTimeStr
+        # updateConfig(configFileName, configProps)
+        return currentTimeHourMinute
+    
+    if timeDifference.total_seconds()/60 > 5:
+        # configProps["last_batch_time"] = currentTimeStr
+        # updateConfig(configFileName, configProps)
+        return currentTimeHourMinute
+    else:
+        return oldTimeHourMinute
+    
+print(getBatchTime())

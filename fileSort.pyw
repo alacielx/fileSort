@@ -1,4 +1,5 @@
-currentVersion = 'v1.78'
+## UPDATED 10/05/23 ##
+currentVersion = 'v1.79'
 
 from dataclasses import dataclass, field
 import os
@@ -7,7 +8,7 @@ import shutil
 import tkinter as tk
 from tkinter import messagebox
 import logging
-import sys
+from datetime import datetime
 from functions import *
 
 @dataclass
@@ -104,9 +105,6 @@ class Order:
         glassTypePatterns = {}
         for type, typeKeywords in glassTypeKeywords.items():
             glassTypePatterns[type] = r'\b(?:' + '|'.join(typeKeywords) + r')\b'
-        
-        # # Create a regex pattern that matches isolated keywords
-        # pattern = r'\b(?:' + '|'.join(re.escape(keyword) for keywords in glassTypeKeywords.values() for keyword in keywords) + r')\b'
 
         # Check if glass order has glass type keyword to set glassType
         for type, typePattern in glassTypePatterns.items():
@@ -145,43 +143,34 @@ class Order:
                 
     def moveGlassOrders(self):
         
-        # hourMinute = time.strftime("%H.%M")
+        hourMinute = getBatchTime()
         
-        if len(self.pdfOutputs) > 1:
-            for glassMakeup, pdfOutput in self.pdfOutputs.items():
+        for glassMakeup, pdfOutput in self.pdfOutputs.items():
+            if len(self.pdfOutputs) > 1:
                 newGlassOrderFileName = os.path.splitext(self.glassOrderFileName)
                 newGlassOrderFileName = newGlassOrderFileName[0] + " " + str(glassMakeup) + newGlassOrderFileName[1]
-                
-                
-                newGlassTypeFolder = os.path.join(self.pdfFolder, glassMakeup)
-                # + " " + hourMinute
-                os.makedirs(newGlassTypeFolder, exist_ok=True)
-                
-                newGlassOrderFilePath = os.path.join(newGlassTypeFolder, newGlassOrderFileName)
-                
-                outputStream = open(newGlassOrderFilePath, "wb")
-                pdfOutput.write(outputStream)
-                outputStream.close()
-                if not self.glassType == "MIRROR":
-                    processPdfBatesNumber(newGlassOrderFilePath)
-                self.copyDxfs(newGlassTypeFolder)
+            else:
+                newGlassOrderFileName = self.glassOrderFileName
             
-            originalGlassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName)
-            os.remove(originalGlassOrderFilePath)
-        else:
-            for glassMakeup, pdfOutput in self.pdfOutputs.items():
-                glassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName)
-                
+            if addFolderTime == "TRUE":
+                newGlassTypeFolder = os.path.join(self.pdfFolder, batesLetter + " " + hourMinute + " - " + glassMakeup)
+            else:
                 newGlassTypeFolder = os.path.join(self.pdfFolder, glassMakeup)
-                # + " " + hourMinute
-                os.makedirs(newGlassTypeFolder, exist_ok=True)
                 
-                newGlassOrderFilePath = os.path.join(newGlassTypeFolder, self.glassOrderFileName)
-                
-                shutil.move(glassOrderFilePath, newGlassOrderFilePath)
-                if not self.glassType == "MIRROR":
-                    processPdfBatesNumber(newGlassOrderFilePath)
-                self.copyDxfs(newGlassTypeFolder)
+            os.makedirs(newGlassTypeFolder, exist_ok=True)
+            
+            newGlassOrderFilePath = os.path.join(newGlassTypeFolder, newGlassOrderFileName)
+            
+            outputStream = open(newGlassOrderFilePath, "wb")
+            pdfOutput.write(outputStream)
+            outputStream.close()
+            
+            if not self.glassType == "MIRROR":
+                processPdfBatesNumber(newGlassOrderFilePath)
+            self.copyDxfs(newGlassTypeFolder)
+        
+        originalGlassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName)
+        os.remove(originalGlassOrderFilePath)
         
         self.delDxfs()
     
@@ -213,38 +202,38 @@ class Order:
         for fscFile in self.fscMatchesFileName:
             fscFilePath = os.path.join(self.dxfFolder, fscFile)
             os.remove(fscFilePath)
-           
-def batesNumberPagesOld(existingPage):
-    global batesNumber, minBatesNumber, maxBatesNumber
+          
+def getBatchTime():
+    """
+    Returns:
+        String: Current time as "HH.MM" or last batch time if within 5 minutes
+    """
+    currentTime = datetime.now()
+    currentTimeStr = currentTime.strftime("%Y-%m-%d %H:%M")
+    currentTimeHourMinute = currentTime.strftime("%I.%M")
     
-    # Create blank pdf
-    packet = io.BytesIO()
-    can = canvas.Canvas(packet, pagesize=letter)
-
-    # Set the position where you want to add text (in points from bottom-left)
-    batesText = batesLetter + batesNumber
-    batesTextWidth = can.stringWidth(batesText, "Helvetica", 20)
+    try:
+        oldTime = datetime.strptime(lastBatchTime, "%Y-%m-%d %H:%M")
+    except:
+        configProps["last_batch_time"] = currentTimeStr
+        updateConfig(configFileName, configProps)
+        return currentTimeHourMinute
     
+    oldTimeHourMinute = oldTime.strftime("%I.%M")
     
-    x, y = letter[0] - 40 - batesTextWidth, letter[1] - 30  # 1 inch from right, 0.5 inch from top
-    can.setFont("Helvetica",20)
-    can.drawString(x, y, batesText)
-    if maxBatesNumber == '-1':
-        batesNumber = str(int(batesNumber) + 1)
+    try:
+        timeDifference = currentTime - oldTime
+    except:
+        configProps["last_batch_time"] = currentTimeStr
+        updateConfig(configFileName, configProps)
+        return currentTimeHourMinute
+    
+    if timeDifference.total_seconds()/60 > 5:
+        configProps["last_batch_time"] = currentTimeStr
+        updateConfig(configFileName, configProps)
+        return currentTimeHourMinute
     else:
-        batesNumber = str(int(batesNumber) + 1) if int(batesNumber)  < int(maxBatesNumber) else minBatesNumber
-    can.save()
-    packet.seek(0)
-    tempPdf = PdfReader(packet)
-    
-    newPage = tempPdf.pages[0]
-    existingPage.merge_page(newPage)
-    
-    # Update bates number
-    configProps["bates_number"] = batesNumber
-    updateConfig(configFileName, configProps)
-    
-    return existingPage
+        return oldTimeHourMinute
          
 def processPdfCleanUp(pdfPath):
     pdf = PdfReader(pdfPath)
@@ -368,7 +357,15 @@ def main():
     # Check if config file exists and has all options
     global configFileName, configProps
     configFileName = 'fileSort.ini'
-    configProps = {"bates_letter" : "", "bates_number" : "", "pdf_folder" : "", "dxf_folder" : "", "min_bates_number" : "0", "max_bates_number" : "-1", "check_for_installs" : "True"}
+    configProps = {"bates_letter" : "", 
+                   "bates_number" : "", 
+                   "pdf_folder" : "", 
+                   "dxf_folder" : "", 
+                   "min_bates_number" : "0", 
+                   "max_bates_number" : "-1", 
+                   "check_for_installs" : "True",
+                   "add_folder_time" : "True",
+                   "last_batch_time" : ""}
 
     checkConfig(configFileName, configProps)
     configProps = readConfig(configFileName)
@@ -385,7 +382,7 @@ def main():
     if not configProps["bates_number"] or not str(configProps["bates_number"]).isnumeric():
         configProps["bates_number"] = askInput("Last bates number:", type = int)
 
-    global batesLetter, batesNumber, pdfFolder, dxfFolder, minBatesNumber, maxBatesNumber, checkForInstalls
+    global batesLetter, batesNumber, pdfFolder, dxfFolder, minBatesNumber, maxBatesNumber, checkForInstalls, addFolderTime, lastBatchTime
     batesLetter = configProps["bates_letter"]
     batesNumber = configProps["bates_number"]
     pdfFolder = configProps["pdf_folder"]
@@ -393,6 +390,8 @@ def main():
     minBatesNumber = configProps["min_bates_number"]
     maxBatesNumber = configProps["max_bates_number"]
     checkForInstalls = configProps["check_for_installs"].upper()
+    addFolderTime = configProps["add_folder_time"].upper()
+    lastBatchTime = configProps["last_batch_time"]
 
     updateConfig(configFileName, configProps)
 
