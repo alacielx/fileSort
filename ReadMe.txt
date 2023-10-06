@@ -1,8 +1,9 @@
-fileSort v1.78
+fileSort v1.79
 
 RULES:
 - "Project Code" on CRL must have NO spaces
 - Hybrid showers must include the word "HYBRID" in "Project Name"
+- First letter of Project Name will dictate glass thickness ie. "V" - 1/4, "R" - 3/8. If using different glass thickness type "HYBRID"
 - Remember to letter doors
 
 Settings to change in fileSort.ini
@@ -13,3 +14,5 @@ Settings to change in fileSort.ini
 - min_bates_number - Bates number will reset to this number after reaching max_bates_number
 - max_bates_number - When bates number reaches this number it will reset to min_bates_number
 - check_for_installs - Set to "True" to ignore checking for Installation Sheets
+- add_folder_time = Set to "True" to name folder with intials and current time ie. "AD 12.57 - 1.4 CLEAR", will use last batch time if within 5mins
+- last_batch_time = Last time a batch was sorted

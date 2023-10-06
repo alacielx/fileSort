@@ -519,7 +519,9 @@ def main():
                 
     result = []
 
-    if movedOrders == 0:
+    if len(orders) == 0:
+        result.append("No orders were found.")
+    elif movedOrders == 0:
         result.append("No orders were moved.")
     else:
         result.append(f"Moved {movedOrders} order(s)")
