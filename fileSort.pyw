@@ -1,5 +1,5 @@
 ## UPDATED 10/05/23 ##
-currentVersion = 'v1.79'
+currentVersion = 'v1.80'
 
 from dataclasses import dataclass, field
 import os
@@ -38,7 +38,12 @@ class Order:
         glassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName)
         
         # Remove extra pages
-        processPdfCleanUp(glassOrderFilePath)
+        try:
+            processPdfCleanUp(glassOrderFilePath)
+        except:
+            self.skipOrder = True
+            errorMessages.add(f"Can't access file {self.glassOrderFileName}")
+            return False
         
         self.pdfOutputs = processPdfGlassType(glassOrderFilePath, self)
         
@@ -153,7 +158,7 @@ class Order:
                 newGlassOrderFileName = self.glassOrderFileName
             
             if addFolderTime == "TRUE":
-                newGlassTypeFolder = os.path.join(self.pdfFolder, batesLetter + " " + hourMinute + " - " + glassMakeup)
+                newGlassTypeFolder = os.path.join(self.pdfFolder, initials + " " + hourMinute + " - " + glassMakeup)
             else:
                 newGlassTypeFolder = os.path.join(self.pdfFolder, glassMakeup)
                 
@@ -208,7 +213,6 @@ def getBatchTime():
     Returns:
         String: Current time as "HH.MM" or last batch time if within 5 minutes
     """
-    currentTime = datetime.now()
     currentTimeStr = currentTime.strftime("%Y-%m-%d %H:%M")
     currentTimeHourMinute = currentTime.strftime("%I.%M")
     
@@ -250,7 +254,7 @@ def processPdfCleanUp(pdfPath):
         
         existingPage = pdf.pages[pageNum]
         output.add_page(existingPage)
-
+    
     # Write the output to a new PDF file
     outputStream = open(pdfPath, "wb")
     output.write(outputStream)
@@ -260,7 +264,7 @@ def processPdfBatesNumber(pdfPath):
     global batesNumber, minBatesNumber, maxBatesNumber
     pdf = PdfReader(pdfPath)
     output = PdfWriter()
-
+    
     # Loop through each page of the existing PDF
     for pageNum in range(len(pdf.pages)):
 
@@ -365,7 +369,8 @@ def main():
                    "max_bates_number" : "-1", 
                    "check_for_installs" : "True",
                    "add_folder_time" : "True",
-                   "last_batch_time" : ""}
+                   "last_batch_time" : "",
+                   "initials" : ""}
 
     checkConfig(configFileName, configProps)
     configProps = readConfig(configFileName)
@@ -381,8 +386,11 @@ def main():
 
     if not configProps["bates_number"] or not str(configProps["bates_number"]).isnumeric():
         configProps["bates_number"] = askInput("Last bates number:", type = int)
+    
+    if not configProps["initials"]:
+        configProps["initials"] = askInput("Enter folder initials:")
 
-    global batesLetter, batesNumber, pdfFolder, dxfFolder, minBatesNumber, maxBatesNumber, checkForInstalls, addFolderTime, lastBatchTime
+    global batesLetter, batesNumber, pdfFolder, dxfFolder, minBatesNumber, maxBatesNumber, checkForInstalls, addFolderTime, lastBatchTime, initials
     batesLetter = configProps["bates_letter"]
     batesNumber = configProps["bates_number"]
     pdfFolder = configProps["pdf_folder"]
@@ -392,6 +400,7 @@ def main():
     checkForInstalls = configProps["check_for_installs"].upper()
     addFolderTime = configProps["add_folder_time"].upper()
     lastBatchTime = configProps["last_batch_time"]
+    initials = configProps["initials"]
 
     updateConfig(configFileName, configProps)
 
@@ -401,7 +410,8 @@ def main():
     missingDxfs = set()
     errorMessages = set()
     
-    global glassOrderPrefix
+    global glassOrderPrefix, currentTime
+    currentTime = datetime.now()
     glassOrderPrefix = "Glass Order - "
     installPrefix = "Installation - "
     orders = []
