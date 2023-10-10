@@ -1,5 +1,5 @@
-## UPDATED 10/05/23 ##
-currentVersion = 'v1.80'
+## UPDATED 10/09/23 ##
+currentVersion = 'v1.81'
 
 from dataclasses import dataclass, field
 import os
@@ -40,7 +40,9 @@ class Order:
         # Remove extra pages
         try:
             processPdfCleanUp(glassOrderFilePath)
-        except:
+        except ValueError as e:
+            print(e.args[0])
+            logging.error(e.args[0])
             self.skipOrder = True
             errorMessages.add(f"Can't access file {self.glassOrderFileName}")
             return False
@@ -219,6 +221,8 @@ def getBatchTime():
     try:
         oldTime = datetime.strptime(lastBatchTime, "%Y-%m-%d %H:%M")
     except:
+        print(e.args[0])
+        logging.error(e.args[0])
         configProps["last_batch_time"] = currentTimeStr
         updateConfig(configFileName, configProps)
         return currentTimeHourMinute
@@ -228,6 +232,8 @@ def getBatchTime():
     try:
         timeDifference = currentTime - oldTime
     except:
+        print(e.args[0])
+        logging.error(e.args[0])
         configProps["last_batch_time"] = currentTimeStr
         updateConfig(configFileName, configProps)
         return currentTimeHourMinute
@@ -426,6 +432,8 @@ def main():
                     pdfCode = os.path.splitext(pdfFile)[0].replace(glassOrderPrefix, "")
                     spaceIndex = pdfCode.find(" ")
                 except:
+                    print(e.args[0])
+                    logging.error(e.args[0])
                     continue
                 
                 uniqueCode = pdfCode[:spaceIndex]
@@ -461,7 +469,9 @@ def main():
                 try:
                     pdfCode = os.path.splitext(pdfFile)[0].replace(installPrefix, "")
                     spaceIndex = pdfCode.find(" ")
-                except:
+                except ValueError as e:
+                    print(e.args[0])
+                    logging.error(e.args[0])
                     continue
                 
                 uniqueCode = pdfCode[:spaceIndex]
@@ -525,6 +535,7 @@ def main():
         except ValueError as e:
             errorMessages.add(e.args[0])
             print(e.args[0])
+            logging.error(e.args[0])
             continue
                 
     result = []
@@ -552,6 +563,9 @@ def main():
         result.append("Errors:\n" + "\n".join(sorted(errorMessages)))
 
     result.append(f"Last bates number used: {int(batesNumber) - 1}")
+    
+    logging.error(result)
+    
     root = tk.Tk()
     root.withdraw()
     messagebox.showinfo(f"fileSort {currentVersion}", "\n\n".join(result))
