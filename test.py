@@ -1,26 +1,18 @@
 from datetime import datetime
+import logging
 
-def getBatchTime():
-    oldTime = datetime.strptime("2023-10-05 18:35", "%Y-%m-%d %H:%M")
-    # oldTime = datetime.strptime(lastBatchTime, "%Y-%m-%d %H:%M")
-    currentTime = datetime.now()
-    
-    oldTimeHourMinute = oldTime.strftime("%I.%M")
-    currentTimeStr = currentTime.strftime("%Y-%m-%d %H:%M")
-    currentTimeHourMinute = currentTime.strftime("%I.%M")
+errorLog = 'error_log.txt'
+logging.basicConfig(filename=errorLog, level=logging.ERROR, format='%(asctime)s - %(levelname)s: %(message)s')
+result = ["ass","mf","you"]
 
-    try:
-        timeDifference = currentTime - oldTime
-    except:
-        # configProps["last_batch_time"] = currentTimeStr
-        # updateConfig(configFileName, configProps)
-        return currentTimeHourMinute
+try:
+    raise Exception("Ass")
+except Exception as e:
+    error_message = e.args[0]
     
-    if timeDifference.total_seconds()/60 > 5:
-        # configProps["last_batch_time"] = currentTimeStr
-        # updateConfig(configFileName, configProps)
-        return currentTimeHourMinute
-    else:
-        return oldTimeHourMinute
-    
-print(getBatchTime())
+    logging.error(result)
+    logging.error(error_message)
+    print(error_message)
+
+# with open('error_log.txt', 'a') as f:
+    # f.write("yo" + " - " + datetime.now().strftime("%m/%d/%Y %H:%M:%S") + "\n")
