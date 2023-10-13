@@ -1,4 +1,4 @@
-fileSort v1.80
+fileSort v1.81
 
 RULES:
 - "Project Code" on CRL must have NO spaces
@@ -14,5 +14,6 @@ Settings to change in fileSort.ini
 - min_bates_number - Bates number will reset to this number after reaching max_bates_number
 - max_bates_number - When bates number reaches this number it will reset to min_bates_number
 - check_for_installs - Set to "True" to ignore checking for Installation Sheets
-- add_folder_time = Set to "True" to name folder with intials and current time ie. "AD 12.57 - 1.4 CLEAR", will use last batch time if within 5mins
+- add_folder_time = Set to "True" to name folder with intials and current time ie. "ADG 12.57 - 1.4 CLEAR", will use last batch time if within 5mins
 - last_batch_time = Last time a batch was sorted
+- initials = Initials for naming the folder ie. "ADG" 12.57 - 1.4 CLEAR
