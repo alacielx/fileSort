@@ -1,4 +1,5 @@
-currentVersion = 'v1.78'
+## UPDATED 10/09/23 ##
+currentVersion = 'v1.81'
 
 from dataclasses import dataclass, field
 import os
@@ -7,7 +8,7 @@ import shutil
 import tkinter as tk
 from tkinter import messagebox
 import logging
-import sys
+from datetime import datetime
 from functions import *
 
 @dataclass
@@ -37,7 +38,14 @@ class Order:
         glassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName)
         
         # Remove extra pages
-        processPdfCleanUp(glassOrderFilePath)
+        try:
+            processPdfCleanUp(glassOrderFilePath)
+        except ValueError as e:
+            print(e.args[0])
+            logging.error(e.args[0])
+            self.skipOrder = True
+            errorMessages.add(f"Can't access file {self.glassOrderFileName}")
+            return False
         
         self.pdfOutputs = processPdfGlassType(glassOrderFilePath, self)
         
@@ -104,9 +112,6 @@ class Order:
         glassTypePatterns = {}
         for type, typeKeywords in glassTypeKeywords.items():
             glassTypePatterns[type] = r'\b(?:' + '|'.join(typeKeywords) + r')\b'
-        
-        # # Create a regex pattern that matches isolated keywords
-        # pattern = r'\b(?:' + '|'.join(re.escape(keyword) for keywords in glassTypeKeywords.values() for keyword in keywords) + r')\b'
 
         # Check if glass order has glass type keyword to set glassType
         for type, typePattern in glassTypePatterns.items():
@@ -145,43 +150,34 @@ class Order:
                 
     def moveGlassOrders(self):
         
-        # hourMinute = time.strftime("%H.%M")
+        hourMinute = getBatchTime()
         
-        if len(self.pdfOutputs) > 1:
-            for glassMakeup, pdfOutput in self.pdfOutputs.items():
+        for glassMakeup, pdfOutput in self.pdfOutputs.items():
+            if len(self.pdfOutputs) > 1:
                 newGlassOrderFileName = os.path.splitext(self.glassOrderFileName)
                 newGlassOrderFileName = newGlassOrderFileName[0] + " " + str(glassMakeup) + newGlassOrderFileName[1]
-                
-                
-                newGlassTypeFolder = os.path.join(self.pdfFolder, glassMakeup)
-                # + " " + hourMinute
-                os.makedirs(newGlassTypeFolder, exist_ok=True)
-                
-                newGlassOrderFilePath = os.path.join(newGlassTypeFolder, newGlassOrderFileName)
-                
-                outputStream = open(newGlassOrderFilePath, "wb")
-                pdfOutput.write(outputStream)
-                outputStream.close()
-                if not self.glassType == "MIRROR":
-                    processPdfBatesNumber(newGlassOrderFilePath)
-                self.copyDxfs(newGlassTypeFolder)
+            else:
+                newGlassOrderFileName = self.glassOrderFileName
             
-            originalGlassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName)
-            os.remove(originalGlassOrderFilePath)
-        else:
-            for glassMakeup, pdfOutput in self.pdfOutputs.items():
-                glassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName)
-                
+            if addFolderTime == "TRUE":
+                newGlassTypeFolder = os.path.join(self.pdfFolder, initials + " " + hourMinute + " - " + glassMakeup)
+            else:
                 newGlassTypeFolder = os.path.join(self.pdfFolder, glassMakeup)
-                # + " " + hourMinute
-                os.makedirs(newGlassTypeFolder, exist_ok=True)
                 
-                newGlassOrderFilePath = os.path.join(newGlassTypeFolder, self.glassOrderFileName)
-                
-                shutil.move(glassOrderFilePath, newGlassOrderFilePath)
-                if not self.glassType == "MIRROR":
-                    processPdfBatesNumber(newGlassOrderFilePath)
-                self.copyDxfs(newGlassTypeFolder)
+            os.makedirs(newGlassTypeFolder, exist_ok=True)
+            
+            newGlassOrderFilePath = os.path.join(newGlassTypeFolder, newGlassOrderFileName)
+            
+            outputStream = open(newGlassOrderFilePath, "wb")
+            pdfOutput.write(outputStream)
+            outputStream.close()
+            
+            if not self.glassType == "MIRROR":
+                processPdfBatesNumber(newGlassOrderFilePath)
+            self.copyDxfs(newGlassTypeFolder)
+        
+        originalGlassOrderFilePath = os.path.join(self.pdfFolder, self.glassOrderFileName)
+        os.remove(originalGlassOrderFilePath)
         
         self.delDxfs()
     
@@ -213,38 +209,41 @@ class Order:
         for fscFile in self.fscMatchesFileName:
             fscFilePath = os.path.join(self.dxfFolder, fscFile)
             os.remove(fscFilePath)
-           
-def batesNumberPagesOld(existingPage):
-    global batesNumber, minBatesNumber, maxBatesNumber
+          
+def getBatchTime():
+    """
+    Returns:
+        String: Current time as "HH.MM" or last batch time if within 5 minutes
+    """
+    currentTimeStr = currentTime.strftime("%Y-%m-%d %H:%M")
+    currentTimeHourMinute = currentTime.strftime("%I.%M")
     
-    # Create blank pdf
-    packet = io.BytesIO()
-    can = canvas.Canvas(packet, pagesize=letter)
-
-    # Set the position where you want to add text (in points from bottom-left)
-    batesText = batesLetter + batesNumber
-    batesTextWidth = can.stringWidth(batesText, "Helvetica", 20)
+    try:
+        oldTime = datetime.strptime(lastBatchTime, "%Y-%m-%d %H:%M")
+    except:
+        print(e.args[0])
+        logging.error(e.args[0])
+        configProps["last_batch_time"] = currentTimeStr
+        updateConfig(configFileName, configProps)
+        return currentTimeHourMinute
     
+    oldTimeHourMinute = oldTime.strftime("%I.%M")
     
-    x, y = letter[0] - 40 - batesTextWidth, letter[1] - 30  # 1 inch from right, 0.5 inch from top
-    can.setFont("Helvetica",20)
-    can.drawString(x, y, batesText)
-    if maxBatesNumber == '-1':
-        batesNumber = str(int(batesNumber) + 1)
+    try:
+        timeDifference = currentTime - oldTime
+    except:
+        print(e.args[0])
+        logging.error(e.args[0])
+        configProps["last_batch_time"] = currentTimeStr
+        updateConfig(configFileName, configProps)
+        return currentTimeHourMinute
+    
+    if timeDifference.total_seconds()/60 > 5:
+        configProps["last_batch_time"] = currentTimeStr
+        updateConfig(configFileName, configProps)
+        return currentTimeHourMinute
     else:
-        batesNumber = str(int(batesNumber) + 1) if int(batesNumber)  < int(maxBatesNumber) else minBatesNumber
-    can.save()
-    packet.seek(0)
-    tempPdf = PdfReader(packet)
-    
-    newPage = tempPdf.pages[0]
-    existingPage.merge_page(newPage)
-    
-    # Update bates number
-    configProps["bates_number"] = batesNumber
-    updateConfig(configFileName, configProps)
-    
-    return existingPage
+        return oldTimeHourMinute
          
 def processPdfCleanUp(pdfPath):
     pdf = PdfReader(pdfPath)
@@ -261,7 +260,7 @@ def processPdfCleanUp(pdfPath):
         
         existingPage = pdf.pages[pageNum]
         output.add_page(existingPage)
-
+    
     # Write the output to a new PDF file
     outputStream = open(pdfPath, "wb")
     output.write(outputStream)
@@ -271,7 +270,7 @@ def processPdfBatesNumber(pdfPath):
     global batesNumber, minBatesNumber, maxBatesNumber
     pdf = PdfReader(pdfPath)
     output = PdfWriter()
-
+    
     # Loop through each page of the existing PDF
     for pageNum in range(len(pdf.pages)):
 
@@ -368,7 +367,16 @@ def main():
     # Check if config file exists and has all options
     global configFileName, configProps
     configFileName = 'fileSort.ini'
-    configProps = {"bates_letter" : "", "bates_number" : "", "pdf_folder" : "", "dxf_folder" : "", "min_bates_number" : "0", "max_bates_number" : "-1", "check_for_installs" : "True"}
+    configProps = {"bates_letter" : "", 
+                   "bates_number" : "", 
+                   "pdf_folder" : "", 
+                   "dxf_folder" : "", 
+                   "min_bates_number" : "0", 
+                   "max_bates_number" : "-1", 
+                   "check_for_installs" : "True",
+                   "add_folder_time" : "True",
+                   "last_batch_time" : "",
+                   "initials" : ""}
 
     checkConfig(configFileName, configProps)
     configProps = readConfig(configFileName)
@@ -384,8 +392,11 @@ def main():
 
     if not configProps["bates_number"] or not str(configProps["bates_number"]).isnumeric():
         configProps["bates_number"] = askInput("Last bates number:", type = int)
+    
+    if not configProps["initials"]:
+        configProps["initials"] = askInput("Enter folder initials:")
 
-    global batesLetter, batesNumber, pdfFolder, dxfFolder, minBatesNumber, maxBatesNumber, checkForInstalls
+    global batesLetter, batesNumber, pdfFolder, dxfFolder, minBatesNumber, maxBatesNumber, checkForInstalls, addFolderTime, lastBatchTime, initials
     batesLetter = configProps["bates_letter"]
     batesNumber = configProps["bates_number"]
     pdfFolder = configProps["pdf_folder"]
@@ -393,6 +404,9 @@ def main():
     minBatesNumber = configProps["min_bates_number"]
     maxBatesNumber = configProps["max_bates_number"]
     checkForInstalls = configProps["check_for_installs"].upper()
+    addFolderTime = configProps["add_folder_time"].upper()
+    lastBatchTime = configProps["last_batch_time"]
+    initials = configProps["initials"]
 
     updateConfig(configFileName, configProps)
 
@@ -402,7 +416,8 @@ def main():
     missingDxfs = set()
     errorMessages = set()
     
-    global glassOrderPrefix
+    global glassOrderPrefix, currentTime
+    currentTime = datetime.now()
     glassOrderPrefix = "Glass Order - "
     installPrefix = "Installation - "
     orders = []
@@ -417,6 +432,8 @@ def main():
                     pdfCode = os.path.splitext(pdfFile)[0].replace(glassOrderPrefix, "")
                     spaceIndex = pdfCode.find(" ")
                 except:
+                    print(e.args[0])
+                    logging.error(e.args[0])
                     continue
                 
                 uniqueCode = pdfCode[:spaceIndex]
@@ -452,7 +469,9 @@ def main():
                 try:
                     pdfCode = os.path.splitext(pdfFile)[0].replace(installPrefix, "")
                     spaceIndex = pdfCode.find(" ")
-                except:
+                except ValueError as e:
+                    print(e.args[0])
+                    logging.error(e.args[0])
                     continue
                 
                 uniqueCode = pdfCode[:spaceIndex]
@@ -516,11 +535,14 @@ def main():
         except ValueError as e:
             errorMessages.add(e.args[0])
             print(e.args[0])
+            logging.error(e.args[0])
             continue
                 
     result = []
 
-    if movedOrders == 0:
+    if len(orders) == 0:
+        result.append("No orders were found.")
+    elif movedOrders == 0:
         result.append("No orders were moved.")
     else:
         result.append(f"Moved {movedOrders} order(s)")
@@ -541,6 +563,9 @@ def main():
         result.append("Errors:\n" + "\n".join(sorted(errorMessages)))
 
     result.append(f"Last bates number used: {int(batesNumber) - 1}")
+    
+    logging.error(result)
+    
     root = tk.Tk()
     root.withdraw()
     messagebox.showinfo(f"fileSort {currentVersion}", "\n\n".join(result))

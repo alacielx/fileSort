@@ -1,14 +1,18 @@
-import tkinter
-from tkinter import ttk
+from datetime import datetime
+import logging
 
-import sv_ttk
+errorLog = 'error_log.txt'
+logging.basicConfig(filename=errorLog, level=logging.ERROR, format='%(asctime)s - %(levelname)s: %(message)s')
+result = ["ass","mf","you"]
 
-root = tkinter.Tk()
+try:
+    raise Exception("Ass")
+except Exception as e:
+    error_message = e.args[0]
+    
+    logging.error(result)
+    logging.error(error_message)
+    print(error_message)
 
-button = ttk.Button(root, text="Click me!")
-button.pack()
-
-# This is where the magic happens
-sv_ttk.set_theme("dark")
-
-root.mainloop()
+# with open('error_log.txt', 'a') as f:
+    # f.write("yo" + " - " + datetime.now().strftime("%m/%d/%Y %H:%M:%S") + "\n")
