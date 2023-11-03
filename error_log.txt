@@ -1,0 +1,9 @@
+2023-10-25 16:54:07,387 - ERROR: ['Moved 1 order(s)', 'P:\\Alaciel De La Garza --\\DXFs\nMissing DXF(s):\n10077306-T-MB_FS', 'Extra DXF(s):\nV72 IL DR NS BN TEMP_FS\nV72 IL DR NS BN TEMP_FSC', 'Last bates number used: 4']
+2023-10-25 16:54:54,309 - ERROR: ['Moved 1 order(s)', 'Extra DXF(s):\nV72 IL DR NS BN TEMP_FS\nV72 IL DR NS BN TEMP_FSC', 'Last bates number used: 6']
+2023-11-02 13:35:01,429 - ERROR: cannot access local variable 'e' where it is not associated with a value
+2023-11-02 13:35:01,429 - ERROR: ['No orders were moved.', "Errors:\ncannot access local variable 'e' where it is not associated with a value", 'Last bates number used: 0']
+2023-11-02 13:35:39,836 - ERROR: time data '' does not match format '%Y-%m-%d %H:%M'
+2023-11-02 13:35:40,624 - ERROR: ['Moved 1 order(s)', 'Last bates number used: 1']
+2023-11-02 13:39:26,672 - ERROR: time data '' does not match format '%Y-%m-%d %H:%M'
+2023-11-02 13:39:27,387 - ERROR: ['Moved 1 order(s)', 'Last bates number used: 1']
+2023-11-02 13:41:36,683 - ERROR: time data '' does not match format '%Y-%m-%d %H:%M'
