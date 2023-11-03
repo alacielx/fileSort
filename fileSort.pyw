@@ -1,5 +1,5 @@
-## UPDATED 10/09/23 ##
-currentVersion = 'v1.81'
+## UPDATED 11/03/23 ##
+currentVersion = 'v1.82'
 
 from dataclasses import dataclass, field
 import os
