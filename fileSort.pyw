@@ -1,5 +1,5 @@
-## UPDATED 10/09/23 ##
-currentVersion = 'v1.81'
+## UPDATED 11/03/23 ##
+currentVersion = 'v1.82'
 
 from dataclasses import dataclass, field
 import os
@@ -9,6 +9,8 @@ import tkinter as tk
 from tkinter import messagebox
 import logging
 from datetime import datetime
+from PyPDF2 import PdfWriter, PdfReader
+import io
 from functions import *
 
 @dataclass
@@ -40,7 +42,7 @@ class Order:
         # Remove extra pages
         try:
             processPdfCleanUp(glassOrderFilePath)
-        except ValueError as e:
+        except Exception as e:
             print(e.args[0])
             logging.error(e.args[0])
             self.skipOrder = True
@@ -221,10 +223,12 @@ def getBatchTime():
     try:
         oldTime = datetime.strptime(lastBatchTime, "%Y-%m-%d %H:%M")
     except:
-        print(e.args[0])
-        logging.error(e.args[0])
         configProps["last_batch_time"] = currentTimeStr
-        updateConfig(configFileName, configProps)
+        try:
+            updateConfig(configFileName, configProps)
+        except Exception as e:
+            logging.error(e.args[0])
+            errorMessages.add(e.args[0])
         return currentTimeHourMinute
     
     oldTimeHourMinute = oldTime.strftime("%I.%M")
@@ -232,15 +236,21 @@ def getBatchTime():
     try:
         timeDifference = currentTime - oldTime
     except:
-        print(e.args[0])
-        logging.error(e.args[0])
         configProps["last_batch_time"] = currentTimeStr
-        updateConfig(configFileName, configProps)
+        try:
+            updateConfig(configFileName, configProps)
+        except Exception as e:
+            logging.error(e.args[0])
+            errorMessages.add(e.args[0])
         return currentTimeHourMinute
     
     if timeDifference.total_seconds()/60 > 5:
         configProps["last_batch_time"] = currentTimeStr
-        updateConfig(configFileName, configProps)
+        try:
+            updateConfig(configFileName, configProps)
+        except Exception as e:
+            logging.error(e.args[0])
+            errorMessages.add(e.args[0])
         return currentTimeHourMinute
     else:
         return oldTimeHourMinute
@@ -305,7 +315,11 @@ def processPdfBatesNumber(pdfPath):
         
             # Update bates number
         configProps["bates_number"] = batesNumber
-        updateConfig(configFileName, configProps)
+        try:
+            updateConfig(configFileName, configProps)
+        except Exception as e:
+            logging.error(e.args[0])
+            errorMessages.add(e.args[0])
     
     # Write the output to a new PDF file
     outputStream = open(pdfPath, "wb")
@@ -341,7 +355,7 @@ def processPdfGlassType(pdfPath, order = Order):
             order.glassType = " ".join(glassPatternMatch.split()[1:])
             glassTypes.add(order.glassType)
         except:
-            raise ValueError(rf"{order.uniqueCode}: No glass type found in Glass Order.")
+            raise Exception(rf"{order.uniqueCode}: No glass type found in Glass Order.")
         
         # Check if already writing a pdf with that glass type
         if not glassPatternMatch in pdfOutputs:
@@ -407,7 +421,7 @@ def main():
     addFolderTime = configProps["add_folder_time"].upper()
     lastBatchTime = configProps["last_batch_time"]
     initials = configProps["initials"]
-
+      
     updateConfig(configFileName, configProps)
 
     global missingGlassOrders, missingInstallations, missingDxfs, errorMessages
@@ -431,7 +445,7 @@ def main():
                 try:
                     pdfCode = os.path.splitext(pdfFile)[0].replace(glassOrderPrefix, "")
                     spaceIndex = pdfCode.find(" ")
-                except:
+                except Exception as e:
                     print(e.args[0])
                     logging.error(e.args[0])
                     continue
@@ -469,7 +483,7 @@ def main():
                 try:
                     pdfCode = os.path.splitext(pdfFile)[0].replace(installPrefix, "")
                     spaceIndex = pdfCode.find(" ")
-                except ValueError as e:
+                except Exception as e:
                     print(e.args[0])
                     logging.error(e.args[0])
                     continue
@@ -532,7 +546,7 @@ def main():
                 
             movedOrders+=1
             
-        except ValueError as e:
+        except Exception as e:
             errorMessages.add(e.args[0])
             print(e.args[0])
             logging.error(e.args[0])
@@ -577,7 +591,7 @@ if __name__ == "__main__":
     try:
         updateExecutable(currentVersion, "fileSort")
         main()
-    except ValueError as e:
+    except Exception as e:
         error_message = e.args[0]
         logging.error(error_message)
         print(error_message)

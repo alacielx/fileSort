@@ -6,8 +6,6 @@ from tkinter import messagebox
 import sys
 import configparser
 import sys
-from PyPDF2 import PdfWriter, PdfReader
-import io
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 import requests
