@@ -8,6 +8,7 @@ RULES:
 - Shower glass type must match glass type in "Project Name"
 
 * Remember to letter doors and add any production notes to pdf
+* Pages with the words "Glass Order" and "Templates" will be removed
 
 ------------------------------------------------------------------
 
