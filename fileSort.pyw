@@ -261,7 +261,7 @@ def processPdfCleanUp(pdfPath):
     pdf = PdfReader(pdfPath)
     output = PdfWriter()
 
-    stringsToExclude = ["GLASS ORDER", "TEMPLATE"]
+    stringsToExclude = ["GLASS ORDER", "TEMPLATES"]
 
     # Loop through each page of the existing PDF and remove any page with stringsToExclude
     for pageNum in range(len(pdf.pages)):
