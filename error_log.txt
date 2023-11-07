@@ -7,3 +7,22 @@
 2023-11-02 13:39:26,672 - ERROR: time data '' does not match format '%Y-%m-%d %H:%M'
 2023-11-02 13:39:27,387 - ERROR: ['Moved 1 order(s)', 'Last bates number used: 1']
 2023-11-02 13:41:36,683 - ERROR: time data '' does not match format '%Y-%m-%d %H:%M'
+2023-11-06 11:26:15,387 - ERROR: 13
+2023-11-06 11:26:21,775 - ERROR: ['No orders were moved.', "Errors:\n31862-DEL: Glass thickness does not match shower type.\nCan't access file Glass Order - 31881-DAL 38 CTP  PPH01  6  SCU4  BG039 CLR.pdf", 'Last bates number used: 0']
+2023-11-06 11:27:19,013 - ERROR: ['No orders were moved.', 'Errors:\n31862-DEL: Glass thickness does not match shower type.\n31881-DAL: Glass Order has different glass thicknesses.', 'Last bates number used: 0']
+2023-11-06 16:59:32,316 - ERROR: 2
+2023-11-06 17:00:00,156 - ERROR: sequence item 0: expected str instance, int found
+2023-11-06 17:00:00,564 - ERROR: 2
+2023-11-06 17:00:00,571 - ERROR: 2
+2023-11-06 17:00:00,572 - ERROR: '<' not supported between instances of 'int' and 'str'
+2023-11-06 17:04:40,636 - ERROR: in method 'Document_save', argument 3 of type 'int'
+2023-11-06 17:06:13,084 - ERROR: expected str, bytes or os.PathLike object, not tuple
+2023-11-06 17:06:15,944 - ERROR: expected str, bytes or os.PathLike object, not tuple
+2023-11-06 17:06:17,782 - ERROR: expected str, bytes or os.PathLike object, not tuple
+2023-11-06 17:06:17,782 - ERROR: ['No orders were moved.', 'Errors:\nexpected str, bytes or os.PathLike object, not tuple', 'Last bates number used: 3']
+2023-11-06 17:09:47,981 - ERROR: in method 'Document_save', argument 3 of type 'int'
+2023-11-06 17:11:52,721 - ERROR: 31862-DEL: No glass type found in Glass Order.
+2023-11-06 17:29:01,680 - ERROR: ['Moved 3 order(s)', 'Last bates number used: 9']
+2023-11-06 17:50:27,602 - ERROR: ['No orders were moved.', 'P:\\Alaciel De La Garza --\\ORDERS\nMissing Installation(s):\n10077041,2', 'P:\\Alaciel De La Garza --\\ORDERS\nMissing DXF(s):\n10077041,2_FS', 'Last bates number used: 9']
+2023-11-06 17:51:00,858 - ERROR: ['No orders were moved.', 'P:\\Alaciel De La Garza --\\ORDERS\nMissing Installation(s):\n10077041,2', 'P:\\Alaciel De La Garza --\\ORDERS\nMissing DXF(s):\n10077041,2_FS', 'Last bates number used: 9']
+2023-11-06 17:59:38,507 - ERROR: ['Moved 1 order(s)', 'Last bates number used: 9']

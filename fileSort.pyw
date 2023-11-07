@@ -1,5 +1,5 @@
 ## UPDATED 11/03/23 ##
-currentVersion = 'v1.82'
+currentVersion = 'v1.83'
 
 from dataclasses import dataclass, field
 import os
@@ -9,6 +9,7 @@ import tkinter as tk
 from tkinter import messagebox
 import logging
 from datetime import datetime
+import fitz
 from PyPDF2 import PdfWriter, PdfReader
 import io
 from functions import *
@@ -98,7 +99,8 @@ class Order:
             "OBSCURE" : ["OBS", "OBSCURE"],
             "SATIN" : ["SATIN", "STN", "SAT", "SN"],
             "FROSTED" : ["FROSTED", "FROST"],
-            "MIRROR" : ["MIRCT", "MIRSQ", "MIRSQCT", "LMIRSQCT", "LMIRCT", "MIR"]
+            "BRONZE" : ["BRONZE", "BRZ", "BRNZ"],
+            "MIRROR" : ["MIR", "MIRCT", "MIRSQ", "MIRSQCT", "MIRCTSQ", "LMIRSQCT", "LMIRCT", "LMIR"]
         }
         
         glassHybridKeywords = ["HYBRID", "VPLAT", "V-PLAT"]
@@ -327,22 +329,43 @@ def processPdfBatesNumber(pdfPath):
     outputStream.close()
     
 def processPdfGlassType(pdfPath, order = Order):
-    pdf = PdfReader(pdfPath)
+    pdfRead = PdfReader(pdfPath)
+    pdfCrop = fitz.open(pdfPath)
 
     # Match example: >1/4" AGI Clear< Tempered
     glassPattern = r"\d{1,2}/\d{1,2}\"\s\w+.*?(?= TEMPERED)"
+    # Exception for "1/4" Mirror NOT Tempered", categorize as "Mirror"
+    mirrorPattern = r"\d{1,2}/\d{1,2}\"\s\w+.*?(?= NOT TEMPERED)"
     
     pdfOutputs = {}
     glassThicknesses = set()
     glassTypes = set()
     
     # Separate pages and check glass type
-    for pageNum in range(len(pdf.pages)):
-        currentPage = pdf.pages[pageNum]
+    for pageNum in range(len(pdfRead.pages)):
+        # Using PyPDF2 to build new pdf
+        currentPage = pdfRead.pages[pageNum]
+        # Using pymupdf, aka fitz, to crop out unnecessary text
+        pageCrop = pdfCrop[pageNum]
+
+        topLeft = pageCrop.rect.x1 / 2, 0
+        bottomRight = pageCrop.rect.x1, pageCrop.rect.y1
+        rect1 = fitz.Rect(topLeft, bottomRight)
+
+        topLeft = 0, pageCrop.rect.y1 / 5
+        bottomRight = pageCrop.rect.x1, pageCrop.rect.y1
+        rect2 = fitz.Rect(topLeft, bottomRight)
+
+        pageCrop.add_redact_annot(rect1)
+        pageCrop.add_redact_annot(rect2)
+        pageCrop.apply_redactions()
+        pageText = pageCrop.get_text().upper()
         
-        pageText = currentPage.extract_text().upper()
         glassPatternMatch = re.findall(glassPattern, pageText)
+        mirrorPatternMatch = re.findall(mirrorPattern, pageText)
         
+        if mirrorPatternMatch:
+            glassPatternMatch = mirrorPatternMatch
         
         # Try if None
         try:
@@ -352,6 +375,7 @@ def processPdfGlassType(pdfPath, order = Order):
             
             order.glassThickness = glassPatternMatch.split()[0]
             glassThicknesses.add(order.glassThickness)
+            
             order.glassType = " ".join(glassPatternMatch.split()[1:])
             glassTypes.add(order.glassType)
         except:
