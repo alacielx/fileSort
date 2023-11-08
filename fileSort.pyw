@@ -1,5 +1,5 @@
 ## UPDATED 11/03/23 ##
-currentVersion = 'v1.83'
+currentVersion = 'v1.84'
 
 from dataclasses import dataclass, field
 import os
@@ -47,7 +47,7 @@ class Order:
             print(e.args[0])
             logging.error(e.args[0])
             self.skipOrder = True
-            errorMessages.add(f"Can't access file {self.glassOrderFileName}")
+            errorMessages.add(f"{self.glassOrderFileName}: Can't access file")
             return False
         
         self.pdfOutputs = processPdfGlassType(glassOrderFilePath, self)
@@ -117,12 +117,16 @@ class Order:
         for type, typeKeywords in glassTypeKeywords.items():
             glassTypePatterns[type] = r'\b(?:' + '|'.join(typeKeywords) + r')\b'
 
-        # Check if glass order has glass type keyword to set glassType
+        # Check if glass order has glass type keyword to set glassType, prioritized by order in dictionary
+        # glassType = None
         for type, typePattern in glassTypePatterns.items():
             if re.search(typePattern, showerCode):
                 glassType = type
-                break  # If a match is found, exit the loop
-        
+                # if glassType is None:
+                #     glassType = type
+                # else:
+                #     raise Exception(f"{self.uniqueCode}: Project Code has multiple glass types")
+                        
         # Check if hybrid to change glassThickness and glassType
         for keyword in glassHybridKeywords:
             if keyword in showerCode:

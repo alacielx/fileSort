@@ -19,7 +19,7 @@ repo_url = f'https://api.github.com/repos/{repo_owner}/{repo_name}/releases/late
 
 exeName = 'fileSort.exe'
 newExeName = 'fileSort_new.exe'
-readMeFile = "readMe.txt"
+readMeFile = "ReadMe.txt"
 
 response = requests.get(repo_url)
 if response.status_code == 200:

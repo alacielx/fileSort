@@ -26,3 +26,14 @@
 2023-11-06 17:50:27,602 - ERROR: ['No orders were moved.', 'P:\\Alaciel De La Garza --\\ORDERS\nMissing Installation(s):\n10077041,2', 'P:\\Alaciel De La Garza --\\ORDERS\nMissing DXF(s):\n10077041,2_FS', 'Last bates number used: 9']
 2023-11-06 17:51:00,858 - ERROR: ['No orders were moved.', 'P:\\Alaciel De La Garza --\\ORDERS\nMissing Installation(s):\n10077041,2', 'P:\\Alaciel De La Garza --\\ORDERS\nMissing DXF(s):\n10077041,2_FS', 'Last bates number used: 9']
 2023-11-06 17:59:38,507 - ERROR: ['Moved 1 order(s)', 'Last bates number used: 9']
+2023-11-07 11:50:25,775 - ERROR: Project Code has multiple glass types
+2023-11-07 11:50:45,147 - ERROR: Project Code has multiple glass types
+2023-11-07 11:50:53,948 - ERROR: ['No orders were moved.', 'Extra DXF(s):\n31924,2-AUS_FSC', 'Errors:\nProject Code has multiple glass types', 'Last bates number used: 9']
+2023-11-07 11:53:44,422 - ERROR: ['Moved 2 order(s)', 'Extra DXF(s):\n31924,2-AUS_FSC', 'Last bates number used: 11']
+2023-11-07 11:54:24,329 - ERROR: 31903,3-DEL: Project Code has multiple glass types
+2023-11-07 11:54:24,704 - ERROR: 10000002-A-TEST: Project Code has multiple glass types
+2023-11-07 11:54:24,704 - ERROR: ['No orders were moved.', 'Extra DXF(s):\n31924,2-AUS_FSC', 'Errors:\n10000002-A-TEST: Project Code has multiple glass types\n31903,3-DEL: Project Code has multiple glass types', 'Last bates number used: 11']
+2023-11-07 11:57:01,704 - ERROR: 31903,3-DEL: Project Code has multiple glass types
+2023-11-07 11:57:02,063 - ERROR: 10000002-A-TEST: Project Code has multiple glass types
+2023-11-07 11:57:02,063 - ERROR: ['No orders were moved.', 'Extra DXF(s):\n31924,2-AUS_FSC', 'Errors:\n10000002-A-TEST: Project Code has multiple glass types\n31903,3-DEL: Project Code has multiple glass types', 'Last bates number used: 11']
+2023-11-07 11:59:49,791 - ERROR: ['Moved 2 order(s)', 'Extra DXF(s):\n31924,2-AUS_FSC', 'Last bates number used: 13']
