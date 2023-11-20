@@ -139,8 +139,7 @@ class Order:
         
         if self.glassType == "MIRROR":
             if not self.fsMatchesFileName and not self.fscMatchesFileName:
-                missingDxfs.add(self.fsCode)
-                missingDxfs.add(self.fscCode)
+                missingDxfs.add(fr"{self.fsCode} or {self.fscCode}")
                 self.skipOrder = True
         else:
             if not self.fsMatchesFileName:
@@ -558,7 +557,7 @@ def main():
     for order in orders:
         assert isinstance(order, Order)
         
-        if not order.glassOrderFileName:
+        if not order.glassOrderFileName and checkForInstalls == "TRUE":
             missingGlassOrders.add(order.uniqueCode)
             continue
         
@@ -590,19 +589,19 @@ def main():
         result.append(f"Moved {movedOrders} order(s)")
         
     if missingGlassOrders:
-        result.append(f"{pdfFolder}\nMissing Glass Order(s):\n" + "\n-".join(sorted(missingGlassOrders)))
+        result.append(f"{pdfFolder}\nMissing Glass Order(s):\n-" + "\n-".join(sorted(missingGlassOrders)))
         
     if missingInstallations:
-        result.append(f"{pdfFolder}\nMissing Installation(s):\n" + "\n".join(sorted(missingInstallations)))
+        result.append(f"{pdfFolder}\nMissing Installation(s):\n-" + "\n-".join(sorted(missingInstallations)))
     
     if missingDxfs:
-        result.append(f"{dxfFolder}\nMissing DXF(s):\n" + "\n".join(sorted(missingDxfs)))
+        result.append(f"{dxfFolder}\nMissing DXF(s):\n-" + "\n-".join(sorted(missingDxfs)))
         
     if extraDxfs:
-        result.append("Extra DXF(s):\n" + "\n".join(sorted(extraDxfs)))
+        result.append("Extra DXF(s):\n-" + "\n-".join(sorted(extraDxfs)))
         
     if errorMessages:
-        result.append("Errors:\n" + "\n".join(sorted(errorMessages)))
+        result.append("Errors:\n-" + "\n-".join(sorted(errorMessages)))
 
     result.append(f"Last bates number used: {int(batesNumber) - 1}")
     
