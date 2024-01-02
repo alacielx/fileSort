@@ -249,7 +249,7 @@ def getBatchTime():
             errorMessages.add(e.args[0])
         return currentTimeHourMinute
     
-    if timeDifference.total_seconds()/60 > 5:
+    if timeDifference.total_seconds()/60 > 10:
         configProps["last_batch_time"] = currentTimeStr
         try:
             updateConfig(configFileName, configProps)
@@ -616,7 +616,7 @@ if __name__ == "__main__":
     logging.basicConfig(filename=log_filename, level=logging.ERROR, format='%(asctime)s - %(levelname)s: %(message)s')
 
     try:
-        updateExecutable(currentVersion, "fileSort")
+        # updateExecutable(currentVersion, "fileSort")
         main()
     except Exception as e:
         error_message = e.args[0]
