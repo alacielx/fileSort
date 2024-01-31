@@ -3,3 +3,5 @@ __pycache__/
 fileSort.spec
 fileSortUpdater.spec
 dist/
+fileSort.ini
+error_log.txt

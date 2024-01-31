@@ -1,5 +1,5 @@
-## UPDATED 11/03/23 ##
-currentVersion = 'v1.84'
+## UPDATED 01/31/24 ##
+currentVersion = 'v1.86'
 
 from dataclasses import dataclass, field
 import os
@@ -13,6 +13,7 @@ import fitz
 from PyPDF2 import PdfWriter, PdfReader
 import io
 from functions import *
+import traceback
 
 @dataclass
 class Order:
@@ -44,7 +45,7 @@ class Order:
         try:
             processPdfCleanUp(glassOrderFilePath)
         except Exception as e:
-            print(e.args[0])
+            traceback.print_exc()
             logging.error(e.args[0])
             self.skipOrder = True
             errorMessages.add(f"{self.glassOrderFileName}: Can't access file")
@@ -100,6 +101,7 @@ class Order:
             "SATIN" : ["SATIN", "STN", "SAT", "SN"],
             "FROSTED" : ["FROSTED", "FROST"],
             "BRONZE" : ["BRONZE", "BRZ", "BRNZ"],
+            "GREY" : ["GREY", "GRY", "GRAY"],
             "MIRROR" : ["MIR", "MIRCT", "MIRSQ", "MIRSQCT", "MIRCTSQ", "LMIRSQCT", "LMIRCT", "LMIR"]
         }
         
@@ -202,11 +204,20 @@ class Order:
             fsFilePath = os.path.join(self.dxfFolder, fsFile)
             newFsFilePath = os.path.join(newOrderFolder, fsFile)
             shutil.copy(fsFilePath, newFsFilePath)
-            
-        for fscFile in self.fscMatchesFileName:
-            fscFilePath = os.path.join(self.dxfFolder, fscFile)
-            newFscFilePath = os.path.join(newOrderFolder, fscFile)
-            shutil.copy(fscFilePath, newFscFilePath)
+        
+        if separate_fsc == "TRUE":
+            fscDxfFolderPath = os.path.join(newOrderFolder,"FSC")
+            if not os.path.exists(fscDxfFolderPath):
+                os.makedirs(fscDxfFolderPath)
+            for fscFile in self.fscMatchesFileName:
+                fscFilePath = os.path.join(self.dxfFolder, fscFile)
+                newFscFilePath = os.path.join(fscDxfFolderPath, fscFile)
+                shutil.copy(fscFilePath, newFscFilePath)
+        else:
+            for fscFile in self.fscMatchesFileName:
+                fscFilePath = os.path.join(self.dxfFolder, fscFile)
+                newFscFilePath = os.path.join(newOrderFolder, fscFile)
+                shutil.copy(fscFilePath, newFscFilePath)
             
     def delDxfs(self):
         for fsFile in self.fsMatchesFileName:
@@ -232,6 +243,7 @@ def getBatchTime():
         try:
             updateConfig(configFileName, configProps)
         except Exception as e:
+            traceback.print_exc()
             logging.error(e.args[0])
             errorMessages.add(e.args[0])
         return currentTimeHourMinute
@@ -245,6 +257,7 @@ def getBatchTime():
         try:
             updateConfig(configFileName, configProps)
         except Exception as e:
+            traceback.print_exc()
             logging.error(e.args[0])
             errorMessages.add(e.args[0])
         return currentTimeHourMinute
@@ -254,6 +267,7 @@ def getBatchTime():
         try:
             updateConfig(configFileName, configProps)
         except Exception as e:
+            traceback.print_exc()
             logging.error(e.args[0])
             errorMessages.add(e.args[0])
         return currentTimeHourMinute
@@ -323,6 +337,7 @@ def processPdfBatesNumber(pdfPath):
         try:
             updateConfig(configFileName, configProps)
         except Exception as e:
+            traceback.print_exc()
             logging.error(e.args[0])
             errorMessages.add(e.args[0])
     
@@ -417,7 +432,8 @@ def main():
                    "check_for_installs" : "True",
                    "add_folder_time" : "True",
                    "last_batch_time" : "",
-                   "initials" : ""}
+                   "initials" : "",
+                   "separate_fsc" : "True"}
 
     checkConfig(configFileName, configProps)
     configProps = readConfig(configFileName)
@@ -437,7 +453,7 @@ def main():
     if not configProps["initials"]:
         configProps["initials"] = askInput("Enter folder initials:")
 
-    global batesLetter, batesNumber, pdfFolder, dxfFolder, minBatesNumber, maxBatesNumber, checkForInstalls, addFolderTime, lastBatchTime, initials
+    global batesLetter, batesNumber, pdfFolder, dxfFolder, minBatesNumber, maxBatesNumber, checkForInstalls, addFolderTime, lastBatchTime, initials, separate_fsc
     batesLetter = configProps["bates_letter"]
     batesNumber = configProps["bates_number"]
     pdfFolder = configProps["pdf_folder"]
@@ -448,6 +464,7 @@ def main():
     addFolderTime = configProps["add_folder_time"].upper()
     lastBatchTime = configProps["last_batch_time"]
     initials = configProps["initials"]
+    separate_fsc = configProps["separate_fsc"].upper()
       
     updateConfig(configFileName, configProps)
 
@@ -473,7 +490,7 @@ def main():
                     pdfCode = os.path.splitext(pdfFile)[0].replace(glassOrderPrefix, "")
                     spaceIndex = pdfCode.find(" ")
                 except Exception as e:
-                    print(e.args[0])
+                    traceback.print_exc()
                     logging.error(e.args[0])
                     continue
                 
@@ -511,7 +528,7 @@ def main():
                     pdfCode = os.path.splitext(pdfFile)[0].replace(installPrefix, "")
                     spaceIndex = pdfCode.find(" ")
                 except Exception as e:
-                    print(e.args[0])
+                    traceback.print_exc()
                     logging.error(e.args[0])
                     continue
                 
@@ -574,8 +591,8 @@ def main():
             movedOrders+=1
             
         except Exception as e:
+            traceback.print_exc()
             errorMessages.add(e.args[0])
-            print(e.args[0])
             logging.error(e.args[0])
             continue
                 
@@ -619,6 +636,7 @@ if __name__ == "__main__":
         # updateExecutable(currentVersion, "fileSort")
         main()
     except Exception as e:
+        traceback.print_exc()
         error_message = e.args[0]
         logging.error(error_message)
         print(error_message)
