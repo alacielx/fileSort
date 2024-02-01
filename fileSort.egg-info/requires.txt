@@ -1,5 +1,0 @@
-reportlab
-Requests
-setuptools
-pymupdf
-PyPDF2
