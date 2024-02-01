@@ -565,8 +565,10 @@ def main():
                         order.addFscMatch(dxfFile)
                         foundOrder = True
                         
-            if not foundOrder:            
+            if not foundOrder and dxfCodeExt:            
                 extraDxfs.add(dxfCodeExt)
+            elif not foundOrder:
+                extraDxfs.add(os.path.splitext(dxfFile)[0])
 
     # Check orders to move
     movedOrders = 0

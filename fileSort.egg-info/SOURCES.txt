@@ -1,0 +1,6 @@
+setup.py
+fileSort.egg-info/PKG-INFO
+fileSort.egg-info/SOURCES.txt
+fileSort.egg-info/dependency_links.txt
+fileSort.egg-info/requires.txt
+fileSort.egg-info/top_level.txt
