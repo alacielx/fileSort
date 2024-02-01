@@ -5,5 +5,5 @@ fileSortUpdater.spec
 dist/
 fileSort.ini
 error_log.txt
-venv\
-fileSort.egg-info\
+venv/
+fileSort.egg-info/
