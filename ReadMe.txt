@@ -23,3 +23,5 @@ Settings to change in fileSort.ini
 - add_folder_time = Set to "True" to name folder with intials and current time ie. "ADG 12.57 - 1.4 CLEAR", will use last batch time if within 5mins
 - last_batch_time = Last time a batch was sorted
 - initials = Initials for naming the folder ie. "ADG" 12.57 - 1.4 CLEAR
+- separate_fsc = Place FSC DXF files in a subfolder
+- time_threshold = Minutes before creating a new folder with new time

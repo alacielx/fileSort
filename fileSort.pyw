@@ -434,7 +434,7 @@ def main():
                    "last_batch_time" : "",
                    "initials" : "",
                    "separate_fsc" : "True",
-                   "time_threshold" : "5"}
+                   "time_threshold" : "10"}
 
     checkConfig(configFileName, configProps)
     configProps = readConfig(configFileName)
