@@ -9,7 +9,7 @@ import os
 import psutil
 import sys
 import zipfile
-import io
+import shutil
 from tkinter import messagebox
 # from downloadProgressBar import downloadProgressBar
 
@@ -37,7 +37,7 @@ if response.status_code == 200:
             for asset in assets:
                 assetName = asset.get('name')
                 downloadUrl = asset.get('browser_download_url')
-                if downloadUrl:
+                if downloadUrl and not assetName == f"{repoName}Updater.pyw":
                     response = requests.get(downloadUrl, stream=True)
                     assetPath = os.path.join(tempFolderName, assetName).replace(os.sep, '/')
                     with open(assetPath, 'wb') as file:
@@ -47,8 +47,7 @@ if response.status_code == 200:
                     os.remove(assetPath)
                     print(f"Downloaded: {assetName}")
             zipFile.extractall()
-        os.remove(tempFolderName)
-
+            zipFile.close()
         # downloadProgressBar(latestZipUrl, latestZipPath, title=f"Updating {repo_name}...")
         # with  zipfile.ZipFile(latestZipPath) as zipFile:
         #     zipFile.extractall()
@@ -59,16 +58,12 @@ else:
     print("Could not connect to GitHub")
     sys.exit()
     
-
-
-
-# Rename from fileSort_new.exe to fileSort.exe
 try:
-    if os.path.exists(latestZipPath):
-        os.remove(latestZipPath)
-    # os.rename(newExeName, exeName)
+    if os.path.exists(tempFolderName):
+        shutil.rmtree(tempFolderName)
 except:
     print("Could not remove file")
 
+exec(open("fileSort.pyw").read())
 messagebox.showinfo(f"{repoName} Updater",f"Updated {repoName}\n\nPlease close this window and run again")
 sys.exit()

@@ -11,6 +11,8 @@ from reportlab.lib.pagesizes import letter
 import requests
 import time
 import subprocess
+import psutil
+import shutil
 
 config = configparser.ConfigParser()
 
@@ -116,3 +118,9 @@ def checkUpdate(currentVersion, repoName):
         # subprocess.Popen(['python', assetFile], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         exec(open(assetFile).read())
         sys.exit()
+    else:
+        try:
+            if os.path.exists(repoName + "Updater"):
+                shutil.rmtree(repoName + "Updater")
+        except:
+            print("Could not remove file")
