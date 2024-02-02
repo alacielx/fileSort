@@ -120,7 +120,7 @@ def checkUpdate(currentVersion, repoName):
         sys.exit()
     else:
         try:
-            if os.path.exists(repoName + "Updater"):
-                shutil.rmtree(repoName + "Updater")
+            if os.path.exists(repoName + "Updater.pyw"):
+                shutil.rmtree(repoName + "Updater.pyw")
         except:
             print("Could not remove file")
