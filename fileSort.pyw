@@ -635,7 +635,7 @@ if __name__ == "__main__":
     logging.basicConfig(filename=log_filename, level=logging.ERROR, format='%(asctime)s - %(levelname)s: %(message)s')
 
     try:
-        # updateExecutable(currentVersion, "fileSort")
+        checkUpdate(currentVersion, "fileSort")
         main()
     except Exception as e:
         traceback.print_exc()

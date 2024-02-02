@@ -85,7 +85,7 @@ def sanitizeName(file_name, character = "_"):
     
     return file_name
 
-def updateExecutable(currentVersion, repoName):
+def checkUpdate(currentVersion, repoName):
     repoOwner = 'alacielx'
     repoUrl = f'https://api.github.com/repos/{repoOwner}/{repoName}/releases/latest'
     
@@ -94,34 +94,23 @@ def updateExecutable(currentVersion, repoName):
     except:
         print("Could not connect to GitHub")
         return
-    
-    latestVersion = response.json()['tag_name']
-    repoUpdater = repoName + "Updater.exe"
 
-    if latestVersion > currentVersion:
-        downloadExecutable(repoUrl, repoUpdater)
+    if response.json()['tag_name'] > currentVersion:
+        if response.status_code == 200:
+            assets = response.json()['assets']
+            for asset in assets:
+                assetFile = asset["name"]
+                if os.path.splitext(assetFile)[0] == repoName + "Updater": 
+                    assetDownloadUrl = asset["browser_download_url"]
+                    break
+        else:
+            print("Could not connect to GitHub")
+            return
+        
+        response = requests.get(assetDownloadUrl, stream=True)
+        with open(assetFile, 'wb') as newAssetFile:
+            for chunk in response.iter_content(chunk_size=8192):
+                newAssetFile.write(chunk)
         time.sleep(2)
-        subprocess.Popen([repoUpdater])
-        sys.exit()
-    else:
-        time.sleep(4)
-        print("Latest version installed")
-        if os.path.exists(repoUpdater):
-            try:
-                os.remove(repoUpdater)
-            except:
-                print("Could not remove updater")
-
-def downloadExecutable(repoUrl, repoUpdater):
-
-    response = requests.get(repoUrl)
-    if response.status_code == 200:
-        release_data = response.json()
-        for asset in release_data.get("assets", []):
-            if asset["name"] == repoUpdater:
-                downloadUrl = asset["browser_download_url"]
-
-    response = requests.get(downloadUrl, stream=True)
-    with open(repoUpdater, 'wb') as new_exe:
-        for chunk in response.iter_content(chunk_size=8192):
-            new_exe.write(chunk)
+        subprocess.Popen([assetFile])
+    sys.exit()

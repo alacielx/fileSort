@@ -1,48 +1,53 @@
+## Updater Setup
+repo_owner = 'alacielx'
+repo_name = 'fileSort'
+repo_url = f'https://api.github.com/repos/{repo_owner}/{repo_name}/releases/latest'
+
 import time
 import requests
 import os
 import psutil
 import sys
+import zipfile
+import io
 from tkinter import messagebox
 from downloadProgressBar import downloadProgressBar
 
 def is_process_running(process_name):
-    process_list = [p.name() for p in psutil.process_iter(attrs=['pid', 'name'])]
+    process_list = [os.path.splitext(p.name())[0] for p in psutil.process_iter(attrs=['pid', 'name'])]
     return process_name in process_list
 
-while is_process_running('fileSort.exe'):
+while is_process_running(repo_name):
     time.sleep(1)
 
-repo_owner = 'alacielx'
-repo_name = 'fileSort'
-repo_url = f'https://api.github.com/repos/{repo_owner}/{repo_name}/releases/latest'
-
-exeName = 'fileSort.exe'
-newExeName = 'fileSort_new.exe'
-readMeFile = "ReadMe.txt"
-
 response = requests.get(repo_url)
-if response.status_code == 200:
-    release_data = response.json()
-    for asset in release_data.get("assets", []):
-        if asset["name"] == exeName:
-            exeDownloadUrl = asset["browser_download_url"]
-        if asset["name"] == readMeFile:
-            readMeDownloadUrl = asset["browser_download_url"]
+latestVersion = response.json()['tag_name']
 
-try:
-    downloadProgressBar(exeDownloadUrl, newExeName, title="Updating fileSort...")
-    downloadProgressBar(readMeDownloadUrl, readMeFile, title="Downloading readMe.txt...")
-except:
-    print("Could not download")
+latestZipUrl = f"https://github.com/alacielx/fileSort/archive/{latestVersion}.zip"
+latestZipPath = f"{repo_name}.zip"
+
+if response.status_code == 200:
+    try:
+        downloadProgressBar(latestZipUrl, latestZipPath, title=f"Updating {repo_name}...")
+        with  zipfile.ZipFile(latestZipPath) as zipFile:
+            zipFile.extractall()
+    except:
+        print("Could not download")
+        sys.exit()
+else:
+    print("Could not connect to GitHub")
+    sys.exit()
+    
+
+
 
 # Rename from fileSort_new.exe to fileSort.exe
 try:
-    if os.path.exists(exeName):
-        os.remove(exeName)
-    os.rename(newExeName, exeName)
+    if os.path.exists(latestZipPath):
+        os.remove(latestZipPath)
+    # os.rename(newExeName, exeName)
 except:
-    print("Could not rename file")
+    print("Could not remove file")
 
-messagebox.showinfo("fileSort Updater","Updated fileSort.exe\n\nPlease close this window and run again")
+messagebox.showinfo(f"{repo_name} Updater",f"Updated {repo_name}\n\nPlease close this window and run again")
 sys.exit()
