@@ -1,7 +1,7 @@
 ## Updater Setup
-repo_owner = 'alacielx'
-repo_name = 'fileSort'
-repo_url = f'https://api.github.com/repos/{repo_owner}/{repo_name}/releases/latest'
+repoOwner = 'alacielx'
+repoName = 'fileSort'
+repoUrl = f'https://api.github.com/repos/{repoOwner}/{repoName}/releases/latest'
 
 import time
 import requests
@@ -11,29 +11,50 @@ import sys
 import zipfile
 import io
 from tkinter import messagebox
-from downloadProgressBar import downloadProgressBar
+# from downloadProgressBar import downloadProgressBar
 
 def is_process_running(process_name):
     process_list = [os.path.splitext(p.name())[0] for p in psutil.process_iter(attrs=['pid', 'name'])]
     return process_name in process_list
 
-while is_process_running(repo_name):
+while is_process_running(repoName):
     time.sleep(1)
 
-response = requests.get(repo_url)
+response = requests.get(repoUrl)
 latestVersion = response.json()['tag_name']
 
-latestZipUrl = f"https://github.com/alacielx/fileSort/archive/{latestVersion}.zip"
-latestZipPath = f"{repo_name}.zip"
+
 
 if response.status_code == 200:
-    try:
-        downloadProgressBar(latestZipUrl, latestZipPath, title=f"Updating {repo_name}...")
-        with  zipfile.ZipFile(latestZipPath) as zipFile:
+    # try:
+        tempFolderName = "temp"
+        if not os.path.exists(tempFolderName):
+            os.makedirs(tempFolderName)
+            
+        latestZipPath = rf"{tempFolderName}\{repoName}.zip"
+        with zipfile.ZipFile(latestZipPath, 'w') as zipFile:
+            assets = response.json()['assets']
+            for asset in assets:
+                assetName = asset.get('name')
+                downloadUrl = asset.get('browser_download_url')
+                if downloadUrl:
+                    response = requests.get(downloadUrl, stream=True)
+                    assetPath = os.path.join(tempFolderName, assetName).replace(os.sep, '/')
+                    with open(assetPath, 'wb') as file:
+                        for chunk in response.iter_content(chunk_size=128):
+                            file.write(chunk)
+                    zipFile.write(assetPath, arcname=assetName)
+                    os.remove(assetPath)
+                    print(f"Downloaded: {assetName}")
             zipFile.extractall()
-    except:
-        print("Could not download")
-        sys.exit()
+        os.remove(tempFolderName)
+
+        # downloadProgressBar(latestZipUrl, latestZipPath, title=f"Updating {repo_name}...")
+        # with  zipfile.ZipFile(latestZipPath) as zipFile:
+        #     zipFile.extractall()
+    # except:
+    #     print("Could not download")
+    #     sys.exit()
 else:
     print("Could not connect to GitHub")
     sys.exit()
@@ -49,5 +70,5 @@ try:
 except:
     print("Could not remove file")
 
-messagebox.showinfo(f"{repo_name} Updater",f"Updated {repo_name}\n\nPlease close this window and run again")
+messagebox.showinfo(f"{repoName} Updater",f"Updated {repoName}\n\nPlease close this window and run again")
 sys.exit()

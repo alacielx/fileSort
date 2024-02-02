@@ -112,5 +112,7 @@ def checkUpdate(currentVersion, repoName):
             for chunk in response.iter_content(chunk_size=8192):
                 newAssetFile.write(chunk)
         time.sleep(2)
-        subprocess.Popen([assetFile])
-    sys.exit()
+        # subprocess.Popen([assetFile])
+        # subprocess.Popen(['python', assetFile], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        exec(open(assetFile).read())
+        sys.exit()
