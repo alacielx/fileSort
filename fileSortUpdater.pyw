@@ -64,6 +64,7 @@ try:
 except:
     print("Could not remove file")
 
-exec(open("fileSort.pyw").read())
+# time.sleep(2)
+# exec(open("fileSort.pyw").read())
 messagebox.showinfo(f"{repoName} Updater",f"Updated {repoName}\n\nPlease close this window and run again")
 sys.exit()

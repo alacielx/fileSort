@@ -262,7 +262,7 @@ def getBatchTime():
             errorMessages.add(e.args[0])
         return currentTimeHourMinute
     
-    if timeDifference.total_seconds()/60 > 10:
+    if timeDifference.total_seconds()/60 > int(timeThreshold):
         configProps["last_batch_time"] = currentTimeStr
         try:
             updateConfig(configFileName, configProps)
@@ -433,7 +433,8 @@ def main():
                    "add_folder_time" : "True",
                    "last_batch_time" : "",
                    "initials" : "",
-                   "separate_fsc" : "True"}
+                   "separate_fsc" : "True",
+                   "time_threshold" : "5"}
 
     checkConfig(configFileName, configProps)
     configProps = readConfig(configFileName)
@@ -453,7 +454,7 @@ def main():
     if not configProps["initials"]:
         configProps["initials"] = askInput("Enter folder initials:")
 
-    global batesLetter, batesNumber, pdfFolder, dxfFolder, minBatesNumber, maxBatesNumber, checkForInstalls, addFolderTime, lastBatchTime, initials, separate_fsc
+    global batesLetter, batesNumber, pdfFolder, dxfFolder, minBatesNumber, maxBatesNumber, checkForInstalls, addFolderTime, lastBatchTime, initials, separate_fsc, timeThreshold
     batesLetter = configProps["bates_letter"]
     batesNumber = configProps["bates_number"]
     pdfFolder = configProps["pdf_folder"]
@@ -465,6 +466,7 @@ def main():
     lastBatchTime = configProps["last_batch_time"]
     initials = configProps["initials"]
     separate_fsc = configProps["separate_fsc"].upper()
+    timeThreshold = configProps["time_threshold"]
       
     updateConfig(configFileName, configProps)
 
