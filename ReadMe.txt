@@ -1,6 +1,6 @@
-fileSort v1.86
+#fileSort v1.86
 
-RULES:
+##RULES:
 - "Project Code" on CRL must have NO spaces***
 - Hybrid showers must include the word "HYBRID" in "Project Name" - ie. Different glass thicknesses or glass types
 - The first letter in "Project Name" will dictate glass thickness needed in shower - ie. "V", "S", "M" needs 1/4" glass, "R" needs 3/8" glass. If using different thickness add "HYBRID" to "Project Name"
@@ -12,7 +12,7 @@ RULES:
 
 ------------------------------------------------------------------
 
-Settings to change in fileSort.ini
+##Settings to change in fileSort.ini
 - bates_letter - Letter from bates number ie. "G"123
 - bates_number - Last number used from bates number ie. G"123"
 - pdf_folder - Folder with Glass Orders and Installation Sheets, Glass Orders and Installation Sheets must be in the same folder
