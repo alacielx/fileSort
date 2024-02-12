@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 import os
 import re
 import shutil
+from typing import Dict
 import tkinter as tk
 from tkinter import messagebox
 import logging
@@ -63,7 +64,7 @@ class Order:
         if (self.glassThickness == projectNameGlassThickness or projectNameGlassThickness == None or projectNameGlassThickness == "HYBRID") and (self.glassType == projectNameGlassType or projectNameGlassType == "HYBRID" ):
             return True
         elif projectNameGlassType == None:
-            errorMessages.add(rf"{self.uniqueCode}: Enter correct glass type in Project Name.")
+            errorMessages.add(rf"{self.uniqueCode}: Enter correct glass type in Project Name. ie. CLR, RN, OBS")
             return False
         elif self.glassThickness == "HYBRID":
             errorMessages.add(rf"{self.uniqueCode}: Glass Order has different glass thicknesses.")
@@ -88,10 +89,10 @@ class Order:
         
         showerCode = str(self.showerCode).upper()
         
-        glassThicknessKeywords = {
-            "1.4" : ["V", "S", "M", "L"],
-            "3.8" : ["R"]
-        }
+        # glassThicknessKeywords = {
+        #     "1.4" : ["V", "S", "M", "L"],
+        #     "3.8" : ["R"]
+        # }
         
         glassTypeKeywords = {
             "CLEAR" : ["CLR", "CL", "CLEAR"],
@@ -102,17 +103,18 @@ class Order:
             "FROSTED" : ["FROSTED", "FROST"],
             "BRONZE" : ["BRONZE", "BRZ", "BRNZ"],
             "GREY" : ["GREY", "GRY", "GRAY"],
-            "MIRROR" : ["MIR", "MIRCT", "MIRSQ", "MIRSQCT", "MIRCTSQ", "LMIRSQCT", "LMIRCT", "LMIR"]
+            "MIRROR" : ["MIR", "MIRCT", "MIRSQ", "MIRSQCT", "MIRCTSQ", "LMIRSQCT", "LMIRCT", "LMIR"],
+            "VINYL" : ["VINYL", "VIN", "VNL"]
         }
         
         glassHybridKeywords = ["HYBRID", "VPLAT", "V-PLAT"]
     
-        # Check if glass order has glass thickness initial keyword to set glassThickness
-        pdfCodeInitial = next((char for char in showerCode if char != ' '), None)
-        for thickness, keywords in glassThicknessKeywords.items():
-            for keyword in keywords:
-                if pdfCodeInitial in keyword:
-                    glassThickness = thickness
+        # # Check if glass order has glass thickness initial keyword to set glassThickness
+        # pdfCodeInitial = next((char for char in showerCode if char != ' '), None)
+        # for thickness, keywords in glassThicknessKeywords.items():
+        #     for keyword in keywords:
+        #         if pdfCodeInitial in keyword:
+        #             glassThickness = thickness
         
         # Create a regex pattern that matches isolated keywords in each glass type
         glassTypePatterns = {}
@@ -151,7 +153,7 @@ class Order:
                 missingDxfs.add(self.fscCode)
                 self.skipOrder = True
         
-        if not self.glassType == "MIRROR" and not self.installationFileName and checkForInstalls == "TRUE":
+        if not (self.glassType == "MIRROR" or self.glassType == "VINYL") and (not self.installationFileName) and checkForInstalls == "TRUE":
             missingInstallations.add(self.uniqueCode)
             self.skipOrder = True
             
@@ -169,9 +171,9 @@ class Order:
                 newGlassOrderFileName = self.glassOrderFileName
             
             if addFolderTime == "TRUE":
-                newGlassTypeFolder = os.path.join(self.pdfFolder, initials + " " + hourMinute + " - " + glassMakeup)
+                newGlassTypeFolder = os.path.join(self.pdfFolder, initials + " " + hourMinute + " - " + str(glassMakeup))
             else:
-                newGlassTypeFolder = os.path.join(self.pdfFolder, glassMakeup)
+                newGlassTypeFolder = os.path.join(self.pdfFolder, str(glassMakeup))
                 
             os.makedirs(newGlassTypeFolder, exist_ok=True)
             
@@ -191,7 +193,7 @@ class Order:
         self.delDxfs()
     
     def moveInstalls(self):
-        if not self.glassType == "MIRROR":
+        if not (self.glassType == "MIRROR" or self.glassType == "VINYL"):
             installFilePath = os.path.join(self.pdfFolder, self.installationFileName)
             installFolder = os.path.join(self.pdfFolder, "Installation Sheets")
             newInstallFilePath = os.path.join(installFolder, self.installationFileName)
@@ -347,6 +349,10 @@ def processPdfBatesNumber(pdfPath):
     outputStream.close()
     
 def processPdfGlassType(pdfPath, order = Order):
+    """
+    Returns:
+    - Dict {GlassMakeup : PDF with just that makeup}
+    """
     pdfRead = PdfReader(pdfPath)
     pdfCrop = fitz.open(pdfPath)
 
@@ -355,7 +361,8 @@ def processPdfGlassType(pdfPath, order = Order):
     # Exception for "1/4" Mirror NOT Tempered", categorize as "Mirror"
     mirrorPattern = r"\d{1,2}/\d{1,2}\"\s\w+.*?(?= NOT TEMPERED)"
     
-    pdfOutputs = {}
+    pdfOutputs: Dict[str, PdfWriter] = {}
+    # pdfOutputs = {str:PdfWriter()}
     glassThicknesses = set()
     glassTypes = set()
     

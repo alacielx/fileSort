@@ -100,7 +100,7 @@ def checkUpdate(currentVersion, repoName):
     if os.path.exists(".git"):
         return
     
-    if response.json()['tag_name'] == currentVersion:
+    if not response.json()['tag_name'] == currentVersion:
         if response.status_code == 200:
             assets = response.json()['assets']
             for asset in assets:
