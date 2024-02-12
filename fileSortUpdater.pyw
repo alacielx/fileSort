@@ -44,6 +44,11 @@ if response.status_code == 200:
         parent_folder = os.path.dirname(current_directory)
         zipFile.extractall(parent_folder)
         zipFile.close()
+        try:
+            if os.path.exists(latestZipPath):
+                os.remove(latestZipPath)
+        except:
+            print("Could not remove file")
     # downloadProgressBar(latestZipUrl, latestZipPath, title=f"Updating {repo_name}...")
     # with  zipfile.ZipFile(latestZipPath) as zipFile:
     #     zipFile.extractall()
@@ -51,13 +56,5 @@ else:
     print("Could not connect to GitHub")
     sys.exit()
     
-try:
-    if os.path.exists(latestZipPath):
-        os.remove(latestZipPath)
-except:
-    print("Could not remove file")
-
-# time.sleep(2)
-# exec(open("fileSort.pyw").read())
 messagebox.showinfo(f"{repoName} Updater",f"Updated {repoName}\n\nPlease close this window and run again")
 sys.exit()

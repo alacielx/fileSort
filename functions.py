@@ -96,7 +96,10 @@ def checkUpdate(currentVersion, repoName):
     except:
         print("Could not connect to GitHub")
         return
-
+    
+    if os.path.exists(".git"):
+        return
+    
     if response.json()['tag_name'] == currentVersion:
         if response.status_code == 200:
             assets = response.json()['assets']
@@ -110,6 +113,8 @@ def checkUpdate(currentVersion, repoName):
             return
         
         tempUpdateFolder = "temp"
+        if not os.path.exists(tempUpdateFolder):
+            os.makedirs(tempUpdateFolder)
         tempUpdateFile = os.path.join(tempUpdateFolder, assetFile)
         
         response = requests.get(assetDownloadUrl, stream=True)

@@ -7,3 +7,4 @@ fileSort.ini
 error_log.txt
 venv/
 fileSort.egg-info/
+temp/
