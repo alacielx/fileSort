@@ -97,7 +97,7 @@ def checkUpdate(currentVersion, repoName):
         print("Could not connect to GitHub")
         return
 
-    if response.json()['tag_name'] > currentVersion:
+    if response.json()['tag_name'] == currentVersion:
         if response.status_code == 200:
             assets = response.json()['assets']
             for asset in assets:
@@ -109,18 +109,21 @@ def checkUpdate(currentVersion, repoName):
             print("Could not connect to GitHub")
             return
         
+        tempUpdateFolder = "temp"
+        tempUpdateFile = os.path.join(tempUpdateFolder, assetFile)
+        
         response = requests.get(assetDownloadUrl, stream=True)
-        with open(assetFile, 'wb') as newAssetFile:
+        with open(tempUpdateFile, 'wb') as newAssetFile:
             for chunk in response.iter_content(chunk_size=8192):
                 newAssetFile.write(chunk)
         time.sleep(2)
         # subprocess.Popen([assetFile])
         # subprocess.Popen(['python', assetFile], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        exec(open(assetFile).read())
+        exec(open(tempUpdateFile).read())
         sys.exit()
     else:
         try:
-            if os.path.exists(repoName + "Updater.pyw"):
-                shutil.rmtree(repoName + "Updater.pyw")
+            if os.path.exists(tempUpdateFolder):
+                shutil.rmtree(tempUpdateFolder)
         except:
             print("Could not remove file")

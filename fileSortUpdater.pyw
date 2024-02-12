@@ -26,41 +26,34 @@ latestVersion = response.json()['tag_name']
 
 
 if response.status_code == 200:
-    # try:
-        tempFolderName = "temp"
-        if not os.path.exists(tempFolderName):
-            os.makedirs(tempFolderName)
-            
-        latestZipPath = rf"{tempFolderName}\{repoName}.zip"
-        with zipfile.ZipFile(latestZipPath, 'w') as zipFile:
-            assets = response.json()['assets']
-            for asset in assets:
-                assetName = asset.get('name')
-                downloadUrl = asset.get('browser_download_url')
-                if downloadUrl and not assetName == f"{repoName}Updater.pyw":
-                    response = requests.get(downloadUrl, stream=True)
-                    assetPath = os.path.join(tempFolderName, assetName).replace(os.sep, '/')
-                    with open(assetPath, 'wb') as file:
-                        for chunk in response.iter_content(chunk_size=128):
-                            file.write(chunk)
-                    zipFile.write(assetPath, arcname=assetName)
-                    os.remove(assetPath)
-                    print(f"Downloaded: {assetName}")
-            zipFile.extractall()
-            zipFile.close()
-        # downloadProgressBar(latestZipUrl, latestZipPath, title=f"Updating {repo_name}...")
-        # with  zipfile.ZipFile(latestZipPath) as zipFile:
-        #     zipFile.extractall()
-    # except:
-    #     print("Could not download")
-    #     sys.exit()
+    latestZipPath = rf"{repoName}.zip"
+    with zipfile.ZipFile(latestZipPath, 'w') as zipFile:
+        assets = response.json()['assets']
+        for asset in assets:
+            assetName = asset.get('name')
+            downloadUrl = asset.get('browser_download_url')
+            if downloadUrl and not assetName == f"{repoName}Updater.pyw":
+                response = requests.get(downloadUrl, stream=True)
+                with open(assetName, 'wb') as file:
+                    for chunk in response.iter_content(chunk_size=128):
+                        file.write(chunk)
+                zipFile.write(assetName, arcname=assetName)
+                os.remove(assetName)
+                print(f"Downloaded: {assetName}")
+        current_directory = os.getcwd()
+        parent_folder = os.path.dirname(current_directory)
+        zipFile.extractall(parent_folder)
+        zipFile.close()
+    # downloadProgressBar(latestZipUrl, latestZipPath, title=f"Updating {repo_name}...")
+    # with  zipfile.ZipFile(latestZipPath) as zipFile:
+    #     zipFile.extractall()
 else:
     print("Could not connect to GitHub")
     sys.exit()
     
 try:
-    if os.path.exists(tempFolderName):
-        shutil.rmtree(tempFolderName)
+    if os.path.exists(latestZipPath):
+        os.remove(latestZipPath)
 except:
     print("Could not remove file")
 
