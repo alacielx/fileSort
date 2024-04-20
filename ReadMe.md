@@ -1,12 +1,12 @@
 # fileSort v1.86
 
 ### Purpose:
-Will sort pdfs (glass orders, installation sheets) and dxfs (finish size w/ cutouts, finish size w/o cutouts) files into respective folders with time stamp depending on glass thickness and glass type extracted from the pdf. Removes unnecessary pages (cover page, cutout templates) and bates numbers pages using user's initials.
+Will sort pdfs (glass orders, installation sheets) and dxfs (finish size w/ cutouts, finish size w/o cutouts) files into respective folders with timestamps depending on glass thickness and glass type extracted from each pdf page. Removes unnecessary pages (cover page, cutout templates) and bates numbers pages using user's initials.
 
 ### RULES:
 - "Project Code" on CRL must have NO spaces***
 - Hybrid showers must include the word "HYBRID" in "Project Name" - ie. Different glass thicknesses or glass types
-- The first letter in "Project Name" will dictate glass thickness needed in shower - ie. "V", "S", "M" needs 1/4" glass, "R" needs 3/8" glass. If using different thickness add "HYBRID" to "Project Name"
+- The first letter in "Project Name" will dictate glass thickness needed in shower - ie. "V", "S", "M" needs 1/4" glass, "R" needs 3/8" glass. If using different thicknesses add "HYBRID" to "Project Name"
 - "Project Name" must include glass type as a separate keyword - ie. "CLR", "AGICLR", "STN", "RN", "OBS". If using different glass types add "HYBRID" to "Project Name"
 - Shower glass type must match glass type in "Project Name"
 
