@@ -1,5 +1,8 @@
 # fileSort v1.86
 
+### Purpose:
+Will sort pdfs and dxfs files into respective folders depending on glass thickness and glass type read from the pdf
+
 ### RULES:
 - "Project Code" on CRL must have NO spaces***
 - Hybrid showers must include the word "HYBRID" in "Project Name" - ie. Different glass thicknesses or glass types
