@@ -1,7 +1,7 @@
 # fileSort v1.86
 
 ### Purpose:
-Will sort pdfs and dxfs files into respective folders depending on glass thickness and glass type read from the pdf
+Will sort pdfs (glass orders, installation sheets) and dxfs (finish size w/ cutouts, finish size w/o cutouts) files into respective folders with time stamp depending on glass thickness and glass type extracted from the pdf. Removes unnecessary pages (cover page, cutout templates) and bates numbers pages using user's initials.
 
 ### RULES:
 - "Project Code" on CRL must have NO spaces***
