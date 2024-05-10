@@ -353,19 +353,18 @@ def processPdfGlassType(pdfPath, order = Order):
     Returns:
     - Dict {GlassMakeup : PDF with just that makeup}
     """
-    pdfRead = PdfReader(pdfPath)
-    pdfCrop = fitz.open(pdfPath)
+    pdfOutputs: Dict[str, PdfWriter] = {}
+    glassThicknesses = set()
+    glassTypes = set()
 
     # Match example: >1/4" AGI Clear< Tempered
     glassPattern = r"\d{1,2}/\d{1,2}\"\s\w+.*?(?= TEMPERED)"
     # Exception for "1/4" Mirror NOT Tempered", categorize as "Mirror"
     mirrorPattern = r"\d{1,2}/\d{1,2}\"\s\w+.*?(?= NOT TEMPERED)"
     
-    pdfOutputs: Dict[str, PdfWriter] = {}
-    # pdfOutputs = {str:PdfWriter()}
-    glassThicknesses = set()
-    glassTypes = set()
-    
+    pdfRead = PdfReader(pdfPath)
+    pdfCrop = fitz.open(pdfPath)
+
     # Separate pages and check glass type
     for pageNum in range(len(pdfRead.pages)):
         # Using PyPDF2 to build new pdf
