@@ -90,11 +90,11 @@ def createShortcut(file_path):
     shortcut_path = os.path.join(script_dir, shortcut_name)
     
     # Check if the file exists
-    if not os.path.exists(shortcut_path) or not os.path.exists(file_path):
+    if os.path.exists(shortcut_path) or not os.path.exists(file_path):
         return
 
     # Get the path to the installed Pythonw executable
-    pythonw_exe = os.path.splitext(sys.executable)[0] + "w" + os.path.splitext(sys.executable)[1]  # Path to the Python interpreter running this script
+    pythonw_exe = os.path.join(os.path.split(sys.executable)[0], "pythonw.exe")  # Path to the Python interpreter running this script
 
     # Create the shortcut
     shell = win32com.client.Dispatch("WScript.Shell")
