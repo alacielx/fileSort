@@ -1,10 +1,7 @@
 build/
 __pycache__/
-fileSort.spec
-fileSortUpdater.spec
-dist/
 fileSort.ini
 error_log.txt
 venv/
-fileSort.egg-info/
 temp/
+hello.py

@@ -1,17 +1,10 @@
 import os
-import tkinter as tk
-from tkinter import simpledialog
-from tkinter import filedialog
-from tkinter import messagebox
+from tkinter import simpledialog, messagebox, filedialog
 import sys
 import configparser
 import sys
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
 import requests
 import time
-import subprocess
-import psutil
 import shutil
 
 config = configparser.ConfigParser()
@@ -100,7 +93,7 @@ def checkUpdate(currentVersion, repoName):
     if os.path.exists(".git"):
         return
     
-    if not response.json()['tag_name'] == currentVersion:
+    if currentVersion < response.json()['tag_name']:
         if response.status_code == 200:
             assets = response.json()['assets']
             for asset in assets:

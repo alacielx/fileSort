@@ -1,5 +1,5 @@
-## UPDATED 01/31/24 ##
-currentVersion = 'v1.87'
+## UPDATED 09/06/24 ##
+currentVersion = 'v1.88'
 
 from dataclasses import dataclass, field
 import os
@@ -10,11 +10,32 @@ import tkinter as tk
 from tkinter import messagebox
 import logging
 from datetime import datetime
+import io
+import traceback
+
+
+import importlib.util
+import subprocess
+import sys
+
+def install_and_import(package):
+    package_name = package.split('=')[0]
+    if importlib.util.find_spec(package_name) is None:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+    globals()[package_name] = importlib.import_module(package_name)
+
+install_and_import("pymupdf")
+install_and_import("PyPDF2")
+install_and_import("reportlab")
+install_and_import("requests")
+install_and_import("setuptools")
+install_and_import("psutil")
+
 import fitz
 from PyPDF2 import PdfWriter, PdfReader
-import io
-from functions import *
-import traceback
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from functions import checkUpdate, updateConfig, readConfig, checkConfig, sanitizeName, askInput, askFolderDirectory
 
 @dataclass
 class Order:
@@ -63,23 +84,25 @@ class Order:
         
         if (self.glassThickness == projectNameGlassThickness or projectNameGlassThickness == None or projectNameGlassThickness == "HYBRID") and (self.glassType == projectNameGlassType or projectNameGlassType == "HYBRID" ):
             return True
-        elif projectNameGlassType == None:
-            errorMessages.add(rf"{self.uniqueCode}: Enter correct glass type in Project Name. ie. CLR, RN, OBS")
-            return False
-        elif self.glassThickness == "HYBRID":
-            errorMessages.add(rf"{self.uniqueCode}: Glass Order has different glass thicknesses.")
-            return False
-        elif self.glassType == "HYBRID":
-            errorMessages.add(rf"{self.uniqueCode}: Glass Order has different glass types.")
-            return False
-        elif not self.glassThickness == projectNameGlassThickness:
-            errorMessages.add(rf"{self.uniqueCode}: Glass thickness does not match shower type.")
-            return False
-        elif not self.glassType == projectNameGlassType:
-            errorMessages.add(rf"{self.uniqueCode}: Glass type does not match Project Name.")
-            return False
         else:
-            errorMessages.add(rf"{self.uniqueCode}: Please check glass thickness/type.")
+            error_flag = False
+            if projectNameGlassType == None:
+                errorMessages.add(rf"{self.uniqueCode}: Enter correct glass type in Project Name. ie. CLR, RN, OBS")
+                error_flag = True
+            if self.glassThickness == "HYBRID":
+                errorMessages.add(rf"{self.uniqueCode}: Glass Order has different glass thicknesses.")
+                error_flag = True
+            if self.glassType == "HYBRID":
+                errorMessages.add(rf"{self.uniqueCode}: Glass Order has different glass types.")
+                error_flag = True
+            if not self.glassThickness == projectNameGlassThickness:
+                errorMessages.add(rf"{self.uniqueCode}: Glass thickness does not match shower type.")
+                error_flag = True
+            if not self.glassType == projectNameGlassType:
+                errorMessages.add(rf"{self.uniqueCode}: Glass type does not match Project Name.")
+                error_flag = True
+            if error_flag == False:
+                errorMessages.add(rf"{self.uniqueCode}: Error detected. Please check glass thickness/type.")
             return False
         
     def checkProjectName(self):
@@ -88,12 +111,6 @@ class Order:
         glassType = None
         
         showerCode = str(self.showerCode).upper()
-        
-        # glassThicknessKeywords = {
-        #     "1.4" : ["V", "S", "M", "L"],
-        #     "3.8" : ["R"]
-        # }
-        
         glassTypeKeywords = {
             "CLEAR" : ["CLR", "CL", "CLEAR"],
             "AGI CLEAR" : ["AGI CLR", "AGICLR", "AGI CLEAR", "AGICLEAR", "AGI CL", "AGICL"],
@@ -108,13 +125,6 @@ class Order:
         }
         
         glassHybridKeywords = ["HYBRID", "VPLAT", "V-PLAT"]
-    
-        # # Check if glass order has glass thickness initial keyword to set glassThickness
-        # pdfCodeInitial = next((char for char in showerCode if char != ' '), None)
-        # for thickness, keywords in glassThicknessKeywords.items():
-        #     for keyword in keywords:
-        #         if pdfCodeInitial in keyword:
-        #             glassThickness = thickness
         
         # Create a regex pattern that matches isolated keywords in each glass type
         glassTypePatterns = {}
