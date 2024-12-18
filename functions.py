@@ -6,6 +6,7 @@ import sys
 import requests
 import time
 import shutil
+import win32com.client
 
 config = configparser.ConfigParser()
 
@@ -80,6 +81,32 @@ def sanitizeName(file_name, character = "_"):
     
     return file_name
 
+def createShortcut(file_path):
+    file_name = os.path.splitext(os.path.split(file_path)[1])[0]
+    script_dir = os.path.dirname(file_path)
+    
+    # Shortcut file name
+    shortcut_name = os.path.splitext(file_name)[0] + " - shortcut.lnk"
+    shortcut_path = os.path.join(script_dir, shortcut_name)
+    
+    # Check if the file exists
+    if not os.path.exists(shortcut_path) or not os.path.exists(file_path):
+        return
+
+    # Get the path to the installed Pythonw executable
+    pythonw_exe = os.path.splitext(sys.executable)[0] + "w" + os.path.splitext(sys.executable)[1]  # Path to the Python interpreter running this script
+
+    # Create the shortcut
+    shell = win32com.client.Dispatch("WScript.Shell")
+    shortcut = shell.CreateShortcut(shortcut_path)
+    shortcut.TargetPath = pythonw_exe
+    shortcut.Arguments = f'"{file_path}"'
+    shortcut.WorkingDirectory = script_dir
+    shortcut.IconLocation = os.path.join(script_dir, os.path.splitext(file_name)[0] + ".ico")  # Optional: use Python executable icon
+    shortcut.Save()
+
+    print(f"Shortcut created: {shortcut_path}")
+    
 def checkUpdate(currentVersion, repoName):
     repoOwner = 'alacielx'
     repoUrl = f'https://api.github.com/repos/{repoOwner}/{repoName}/releases/latest'

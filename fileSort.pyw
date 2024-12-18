@@ -18,11 +18,12 @@ import importlib.util
 import subprocess
 import sys
 
-def install_and_import(package):
-    package_name = package.split('=')[0]
-    if importlib.util.find_spec(package_name) is None:
+def install_and_import(package, import_name = None):
+    if not import_name:
+        import_name = package
+    if importlib.util.find_spec(import_name) is None:
         subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-    globals()[package_name] = importlib.import_module(package_name)
+    globals()[package] = importlib.import_module(import_name)
 
 install_and_import("pymupdf")
 install_and_import("PyPDF2")
@@ -30,12 +31,13 @@ install_and_import("reportlab")
 install_and_import("requests")
 install_and_import("setuptools")
 install_and_import("psutil")
+install_and_import("pywin32", "win32com")
 
 import fitz
 from PyPDF2 import PdfWriter, PdfReader
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
-from functions import checkUpdate, updateConfig, readConfig, checkConfig, sanitizeName, askInput, askFolderDirectory
+from functions import checkUpdate, createShortcut, updateConfig, readConfig, checkConfig, sanitizeName, askInput, askFolderDirectory
 
 @dataclass
 class Order:
@@ -654,6 +656,7 @@ if __name__ == "__main__":
 
     try:
         checkUpdate(currentVersion, "fileSort")
+        createShortcut(os.path.abspath(__file__))
         main()
     except Exception as e:
         traceback.print_exc()
