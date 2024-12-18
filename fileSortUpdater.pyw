@@ -40,7 +40,7 @@ if response.status_code == 200:
                 zipFile.write(assetName, arcname=assetName)
                 os.remove(assetName)
                 print(f"Downloaded: {assetName}")
-        current_directory = os.getcwd()
+        current_directory = os.path.dirname(os.path.abspath(__file__))
         parent_folder = os.path.dirname(current_directory)
         zipFile.extractall(parent_folder)
         zipFile.close()
