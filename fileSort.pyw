@@ -322,7 +322,7 @@ def processPdfBatesNumber(pdfPath):
         can = canvas.Canvas(packet, pagesize=letter)
         
         # Set the position where you want to add text (in points from bottom-left)
-        batesText = batesLetter + batesNumber
+        batesText = initials + batesNumber
         batesTextWidth = can.stringWidth(batesText, "Helvetica", 20)
         
         x, y = letter[0] - 40 - batesTextWidth, letter[1] - 30  # 1 inch from right, 0.5 inch from top
@@ -441,16 +441,15 @@ def main():
     # Check if config file exists and has all options
     global configFileName, configProps
     configFileName = 'fileSort.ini'
-    configProps = {"bates_letter" : "", 
+    configProps = {"initials" : "",
                    "bates_number" : "", 
                    "pdf_folder" : "", 
                    "dxf_folder" : "", 
                    "min_bates_number" : "0", 
-                   "max_bates_number" : "-1", 
+                   "max_bates_number" : "999", 
                    "check_for_installs" : "True",
                    "add_folder_time" : "True",
                    "last_batch_time" : "",
-                   "initials" : "",
                    "separate_fsc" : "True",
                    "time_threshold" : "10"}
 
@@ -463,17 +462,14 @@ def main():
     if not configProps['dxf_folder'] or not os.path.exists(configProps['dxf_folder']):
         configProps['dxf_folder'] = askFolderDirectory("Select DXF Folder")
     
-    if not configProps["bates_letter"]:
-        configProps["bates_letter"] = askInput("Bates letter:")
+    if not configProps["initials"]:
+        configProps["initials"] = askInput("Enter your initials:")
 
     if not configProps["bates_number"] or not str(configProps["bates_number"]).isnumeric():
-        configProps["bates_number"] = askInput("Last bates number:", type = int)
-    
-    if not configProps["initials"]:
-        configProps["initials"] = askInput("Enter folder initials:")
+        configProps["bates_number"] = askInput("Enter starting bates number(if unsure put 0):", type = int)
 
-    global batesLetter, batesNumber, pdfFolder, dxfFolder, minBatesNumber, maxBatesNumber, checkForInstalls, addFolderTime, lastBatchTime, initials, separate_fsc, timeThreshold
-    batesLetter = configProps["bates_letter"]
+    global batesNumber, pdfFolder, dxfFolder, minBatesNumber, maxBatesNumber, checkForInstalls, addFolderTime, lastBatchTime, initials, separate_fsc, timeThreshold
+    initials = configProps["initials"]
     batesNumber = configProps["bates_number"]
     pdfFolder = configProps["pdf_folder"]
     dxfFolder = configProps["dxf_folder"]
@@ -482,7 +478,6 @@ def main():
     checkForInstalls = configProps["check_for_installs"].upper()
     addFolderTime = configProps["add_folder_time"].upper()
     lastBatchTime = configProps["last_batch_time"]
-    initials = configProps["initials"]
     separate_fsc = configProps["separate_fsc"].upper()
     timeThreshold = configProps["time_threshold"]
       
