@@ -13,7 +13,6 @@ from datetime import datetime
 import io
 import traceback
 
-
 import importlib.util
 import subprocess
 import sys
@@ -84,7 +83,8 @@ class Order:
         
         projectNameGlassThickness, projectNameGlassType = self.checkProjectName()
         
-        if (self.glassThickness == projectNameGlassThickness or projectNameGlassThickness == None or projectNameGlassThickness == "HYBRID") and (self.glassType == projectNameGlassType or projectNameGlassType == "HYBRID" ):
+        if (self.glassThickness == projectNameGlassThickness or projectNameGlassThickness == None or projectNameGlassThickness == "HYBRID")\
+            and (self.glassType == projectNameGlassType or projectNameGlassType == None or projectNameGlassType == "HYBRID" ):
             return True
         else:
             error_flag = False
@@ -104,7 +104,7 @@ class Order:
                 errorMessages.add(rf"{self.uniqueCode}: Glass type does not match Project Name.")
                 error_flag = True
             if error_flag == False:
-                errorMessages.add(rf"{self.uniqueCode}: Error detected. Please check glass thickness/type.")
+                errorMessages.add(rf"{self.uniqueCode}: Please check glass thickness/type.")
             return False
         
     def checkProjectName(self):
@@ -134,14 +134,9 @@ class Order:
             glassTypePatterns[type] = r'\b(?:' + '|'.join(typeKeywords) + r')\b'
 
         # Check if glass order has glass type keyword to set glassType, prioritized by order in dictionary
-        # glassType = None
         for type, typePattern in glassTypePatterns.items():
             if re.search(typePattern, showerCode):
                 glassType = type
-                # if glassType is None:
-                #     glassType = type
-                # else:
-                #     raise Exception(f"{self.uniqueCode}: Project Code has multiple glass types")
                         
         # Check if hybrid to change glassThickness and glassType
         for keyword in glassHybridKeywords:
