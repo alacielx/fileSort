@@ -419,7 +419,7 @@ def processPdfGlassType(pdfPath, order = Order):
 
 ######################################################################################################################################################################
 
-def main():
+def run():
     # Check if config file exists and has all options
     global configFileName, configProps
     configFileName = 'fileSort.ini'
@@ -634,7 +634,7 @@ if __name__ == "__main__":
     try:
         checkUpdate(currentVersion, "fileSort")
         createShortcut(os.path.abspath(__file__))
-        main()
+        run()
     except Exception as e:
         traceback.print_exc()
         error_message = e.args[0]
