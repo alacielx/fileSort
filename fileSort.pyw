@@ -13,30 +13,17 @@ from datetime import datetime
 import io
 import traceback
 
-import importlib.util
-import subprocess
-import sys
+from functions import *
 
-def install_and_import(package, import_name = None):
-    if not import_name:
-        import_name = package
-    if importlib.util.find_spec(import_name) is None:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-    globals()[package] = importlib.import_module(import_name)
+modules_to_install = ["pymupdf", "PyPDF2", "reportlab", "requests", "setuptools", "psutil", ("pywin32", "win32com")]
 
-install_and_import("pymupdf")
-install_and_import("PyPDF2")
-install_and_import("reportlab")
-install_and_import("requests")
-install_and_import("setuptools")
-install_and_import("psutil")
-install_and_import("pywin32", "win32com")
+for mod in modules_to_install:
+    install_and_import(mod)
 
 import fitz
 from PyPDF2 import PdfWriter, PdfReader
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
-from functions import checkUpdate, createShortcut, updateConfig, readConfig, checkConfig, sanitizeName, askInput, askFolderDirectory
 
 @dataclass
 class Order:
@@ -592,10 +579,10 @@ def main():
         
         try:
             # Check glass type and missing information
-            if order.isOrderValid() == False:
-                continue
-            
-            order.moveGlassOrders()
+            if order.isOrderValid():
+                order.moveGlassOrders()
+            else:
+                continue          
             
             if checkForInstalls == "TRUE":
                 order.moveInstalls()

@@ -7,6 +7,9 @@ import requests
 import time
 import shutil
 import win32com.client
+import importlib.util
+import subprocess
+import sys
 
 config = configparser.ConfigParser()
 
@@ -80,7 +83,21 @@ def sanitizeName(file_name, character = "_"):
             file_name = file_name.replace(invalid_char, character)
     
     return file_name
+def install_and_import(package, import_name = None):
+    """Installs package
 
+    Args:
+        package (string) or (tuple): Tuple gets unpackaged as (package, import_name)
+        import_name (string, optional): Defaults to None. If import name is different from package name.
+    """
+    if type(package) is tuple:
+        package, import_name = package
+    if not import_name:
+        import_name = package
+    if importlib.util.find_spec(import_name) is None:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+    globals()[package] = importlib.import_module(import_name)
+    
 def createShortcut(file_path):
     file_name = os.path.splitext(os.path.split(file_path)[1])[0]
     script_dir = os.path.dirname(file_path)
