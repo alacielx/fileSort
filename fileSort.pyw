@@ -1,5 +1,5 @@
-## UPDATED 09/06/24 ##
-currentVersion = 'v1.88'
+## UPDATED 01/31/24 ##
+currentVersion = 'v1.9'
 
 from dataclasses import dataclass, field
 import os
@@ -177,7 +177,7 @@ class Order:
             pdfOutput.write(outputStream)
             outputStream.close()
             
-            if not self.glassType == "MIRROR":
+            if not self.glassType == "MIRROR" and numberPages == "True":
                 processPdfBatesNumber(newGlassOrderFilePath)
             self.copyDxfs(newGlassTypeFolder)
         
@@ -423,17 +423,20 @@ def run():
     # Check if config file exists and has all options
     global configFileName, configProps
     configFileName = 'fileSort.ini'
-    configProps = {"initials" : "",
-                   "bates_number" : "", 
-                   "pdf_folder" : "", 
-                   "dxf_folder" : "", 
-                   "min_bates_number" : "0", 
-                   "max_bates_number" : "999", 
-                   "check_for_installs" : "True",
-                   "add_folder_time" : "True",
-                   "last_batch_time" : "",
-                   "separate_fsc" : "True",
-                   "time_threshold" : "10"}
+    configProps = {
+        "initials" : "",
+        "bates_number" : "", 
+        "pdf_folder" : "", 
+        "dxf_folder" : "", 
+        "min_bates_number" : "0", 
+        "max_bates_number" : "999", 
+        "check_for_installs" : "True",
+        "add_folder_time" : "True",
+        "last_batch_time" : "",
+        "separate_fsc" : "True",
+        "time_threshold" : "10",
+        "number_pages": "True"
+        }
 
     checkConfig(configFileName, configProps)
     configProps = readConfig(configFileName)
@@ -448,9 +451,9 @@ def run():
         configProps["initials"] = askInput("Enter your initials:")
 
     if not configProps["bates_number"] or not str(configProps["bates_number"]).isnumeric():
-        configProps["bates_number"] = askInput("Enter starting bates number(if unsure put 0):", type = int)
+        configProps["bates_number"] = askInput("Enter starting bates number(if unsure put 1):", type = int)
 
-    global batesNumber, pdfFolder, dxfFolder, minBatesNumber, maxBatesNumber, checkForInstalls, addFolderTime, lastBatchTime, initials, separate_fsc, timeThreshold
+    global batesNumber, pdfFolder, dxfFolder, minBatesNumber, maxBatesNumber, checkForInstalls, addFolderTime, lastBatchTime, initials, separate_fsc, timeThreshold, numberPages
     initials = configProps["initials"]
     batesNumber = configProps["bates_number"]
     pdfFolder = configProps["pdf_folder"]
@@ -462,6 +465,7 @@ def run():
     lastBatchTime = configProps["last_batch_time"]
     separate_fsc = configProps["separate_fsc"].upper()
     timeThreshold = configProps["time_threshold"]
+    numberPages = configProps["number_pages"]
       
     updateConfig(configFileName, configProps)
 

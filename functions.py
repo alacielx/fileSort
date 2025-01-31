@@ -139,6 +139,7 @@ def checkUpdate(currentVersion, repoName):
         return
    
     if currentVersion < response.json()['tag_name']:
+        assetDownloadUrl = None
         if response.status_code == 200:
             assets = response.json()['assets']
             for asset in assets:
@@ -148,6 +149,9 @@ def checkUpdate(currentVersion, repoName):
                     break
         else:
             print("Could not connect to GitHub")
+            return
+        
+        if assetDownloadUrl == None:
             return
         
         response = requests.get(assetDownloadUrl, stream=True)
