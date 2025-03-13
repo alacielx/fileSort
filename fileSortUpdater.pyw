@@ -23,32 +23,22 @@ while is_process_running(repoName):
 response = requests.get(repoUrl)
 latestVersion = response.json()['tag_name']
 
-
-
 if response.status_code == 200:
-    latestZipPath = rf"{repoName}.zip"
-    with zipfile.ZipFile(latestZipPath, 'w') as zipFile:
-        assets = response.json()['assets']
-        for asset in assets:
-            assetName = asset.get('name')
-            downloadUrl = asset.get('browser_download_url')
-            if downloadUrl and not assetName == f"{repoName}Updater.pyw":
-                response = requests.get(downloadUrl, stream=True)
-                with open(assetName, 'wb') as file:
-                    for chunk in response.iter_content(chunk_size=128):
-                        file.write(chunk)
-                zipFile.write(assetName, arcname=assetName)
-                os.remove(assetName)
-                print(f"Downloaded: {assetName}")
-        current_directory = os.path.dirname(os.path.abspath(__file__))
-        parent_folder = os.path.dirname(current_directory)
-        zipFile.extractall(parent_folder)
-        zipFile.close()
-        try:
-            if os.path.exists(latestZipPath):
-                os.remove(latestZipPath)
-        except:
-            print("Could not remove file")
+    assets = response.json()['assets']
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    parent_folder = os.path.dirname(current_directory)
+    for asset in assets:
+        assetName = asset.get('name')
+        downloadUrl = asset.get('browser_download_url')
+        if downloadUrl and not assetName == f"{repoName}Updater.pyw":
+            response = requests.get(downloadUrl, stream=True)
+            with open(assetName, 'wb') as file:
+                for chunk in response.iter_content(chunk_size=128):
+                    file.write(chunk)
+            newFile = os.path.join(parent_folder, assetName)
+            shutil.move(assetName, newFile)
+    
+    
     # downloadProgressBar(latestZipUrl, latestZipPath, title=f"Updating {repo_name}...")
     # with  zipfile.ZipFile(latestZipPath) as zipFile:
     #     zipFile.extractall()
