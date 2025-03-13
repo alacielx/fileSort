@@ -151,7 +151,9 @@ def checkUpdate(currentVersion, repoName):
     except:
         print("Could not connect to GitHub")
         return
-   
+    
+    tempUpdateFolder = "temp"
+    
     if currentVersion < response.json()['tag_name']:
         assetDownloadUrl = None
         if response.status_code == 200:
@@ -170,7 +172,6 @@ def checkUpdate(currentVersion, repoName):
         
         response = requests.get(assetDownloadUrl, stream=True)
         
-        tempUpdateFolder = "temp"
         if not path.exists(tempUpdateFolder):
             os.makedirs(tempUpdateFolder)
         tempUpdateFile = path.join(tempUpdateFolder, assetFile)
@@ -190,6 +191,7 @@ def checkUpdate(currentVersion, repoName):
             
 def download_zip(zips):
     import urllib.request
+    import zipfile
     
     for key, value in zips.items():
         output_dir = fr"C:\{key}"
