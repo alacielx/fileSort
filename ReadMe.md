@@ -1,4 +1,4 @@
-# fileSort v1.86
+# fileSort v1.91
 
 ### Purpose:
 Will sort pdfs (glass orders, installation sheets) and dxfs (finish size w/ cutouts, finish size w/o cutouts) files into respective folders with timestamps depending on glass thickness and glass type extracted from each pdf page. Removes unnecessary pages (cover page, cutout templates) and bates numbers pages using user's initials.
@@ -28,3 +28,4 @@ Will sort pdfs (glass orders, installation sheets) and dxfs (finish size w/ cuto
 - initials = Initials for naming the folder ie. "ADG" 12.57 - 1.4 CLEAR
 - separate_fsc = Place FSC DXF files in a subfolder
 - time_threshold = Minutes before creating a new folder with new time
+- number_pages = Add bates number or not
