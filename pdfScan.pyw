@@ -13,7 +13,6 @@ import cv2
 import tkinter as tk
 from tkinter import messagebox
 import fitz  # PyMuPDF
-from install_packages import download_zip
 from functions import *
 
 
@@ -199,17 +198,6 @@ initials = configProps["initials"]
 add_so_number = configProps["add_so_number"]
 
 updateConfig(config_file_name, configProps)
-
-# #Read config file
-# pdf_folder, working_date, installation_date, initials, add_so_number = read_config_file()
-
-
-
-#Change to test mode if in "Test" folder
-# current_directory = os.getcwd()
-# folders = current_directory.split("\\")
-# if folders[len(folders)-1] == "Test":
-# pdf_folder = fr"C:\Users\agarza\OneDrive - Arrow Glass Industries\Documents\GitHub\pdfScan\testData"
 
 poppler_dir = r"C:\poppler\poppler-23.07.0\Library\bin"
 

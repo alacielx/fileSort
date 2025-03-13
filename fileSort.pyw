@@ -1,5 +1,5 @@
-## UPDATED 01/31/24 ##
-currentVersion = 'v1.9'
+## UPDATED 03/13/25 ##
+currentVersion = 'v1.91'
 
 from dataclasses import dataclass, field
 import os
@@ -13,12 +13,17 @@ from datetime import datetime
 import io
 import traceback
 
+modules_to_install = [("pymupdf", "fitz"), "PyPDF2", "reportlab", "requests", "setuptools", "psutil", ("pywin32", "win32com")]
+
+from functions import install_and_import
+
+for module in modules_to_install:
+    if isinstance(module, tuple):
+        install_and_import(module[0],module[1])
+    else:
+        install_and_import(module)
+
 from functions import *
-
-modules_to_install = ["pymupdf", "PyPDF2", "reportlab", "requests", "setuptools", "psutil", ("pywin32", "win32com")]
-
-for mod in modules_to_install:
-    install_and_import(mod)
 
 import fitz
 from PyPDF2 import PdfWriter, PdfReader
@@ -352,7 +357,9 @@ def processPdfGlassType(pdfPath, order = Order):
     glassTypes = set()
 
     # Match example: >1/4" AGI Clear< Tempered
-    glassPattern = r"\d{1,2}/\d{1,2}\"\s\w+.*?(?= TEMPERED)"
+    tempGlassPattern = r"\d{1,2}/\d{1,2}\"\s\w+.*?(?= TEMPERED)"
+    # Match example: >1/4" AGI Clear< Annealed
+    annGlassPattern = r"\d{1,2}/\d{1,2}\"\s\w+.*?(?= ANNEALED)"
     # Exception for "1/4" Mirror NOT Tempered", categorize as "Mirror"
     mirrorPattern = r"\d{1,2}/\d{1,2}\"\s\w+.*?(?= NOT TEMPERED)"
     
@@ -379,11 +386,16 @@ def processPdfGlassType(pdfPath, order = Order):
         pageCrop.apply_redactions()
         pageText = pageCrop.get_text().upper()
         
-        glassPatternMatch = re.findall(glassPattern, pageText)
         mirrorPatternMatch = re.findall(mirrorPattern, pageText)
+        tempGlassPatternMatch = re.findall(tempGlassPattern, pageText)
+        annGlassPatternMatch = re.findall(annGlassPattern, pageText)
         
         if mirrorPatternMatch:
             glassPatternMatch = mirrorPatternMatch
+        elif tempGlassPatternMatch:
+            glassPatternMatch = tempGlassPatternMatch
+        elif annGlassPatternMatch:
+            glassPatternMatch = annGlassPatternMatch
         
         # Try if None
         try:

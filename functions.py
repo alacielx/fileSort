@@ -1,20 +1,13 @@
-import os.path as path
 import os
-from tkinter import simpledialog, messagebox, filedialog
+import os.path as path
 import sys
 import configparser
-import sys
-import requests
-import time
-import shutil
-import win32com.client
-import importlib.util
-import subprocess
-import sys
 
 config = configparser.ConfigParser()
 
 def askFolderDirectory(windowTitle="Select Folder"):
+    from tkinter import filedialog
+    
     folder_selected = ""
 
     folder_selected = filedialog.askdirectory(title=windowTitle)
@@ -56,6 +49,8 @@ def readConfig(config_file_name):
     return config_props
 
 def askInput(message, windowTitle = " ", type = str):
+    from tkinter import simpledialog, messagebox
+    
     user_input = simpledialog.askstring(windowTitle, message)
     
     try:
@@ -84,22 +79,37 @@ def sanitizeName(file_name, character = "_"):
             file_name = file_name.replace(invalid_char, character)
     
     return file_name
-def install_and_import(package, import_name = None):
+
+        
+def install_and_import(package, module = None):
     """Installs package
 
     Args:
         package (string) or (tuple): Tuple gets unpackaged as (package, import_name)
         import_name (string, optional): Defaults to None. If import name is different from package name.
     """
-    if type(package) is tuple:
-        package, import_name = package
-    if not import_name:
-        import_name = package
-    if importlib.util.find_spec(import_name) is None:
+    
+    import subprocess
+    import importlib.util
+    
+    if not module:
+        module = package
+        
+    if importlib.util.find_spec(module) is None:
+        print(f"Installing {package}.\n")
+        
         subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-    globals()[package] = importlib.import_module(import_name)
+    else:
+        print(f"{package} already installed.\n")
+        
+    try:
+        globals()[module] = importlib.import_module(module)
+        print(f"imported {module}")
+    except:
+        print(f"{module} is already imported.")   
     
 def createShortcut(file_path):
+    import win32com.client
     file_name = path.splitext(path.split(file_path)[1])[0]
     script_dir = path.dirname(file_path)
     
@@ -126,6 +136,10 @@ def createShortcut(file_path):
     print(f"Shortcut created: {shortcut_path}")
     
 def checkUpdate(currentVersion, repoName):
+    import time
+    import requests
+    import shutil
+    
     if path.exists(".git"):
         return
     
@@ -173,3 +187,26 @@ def checkUpdate(currentVersion, repoName):
                 shutil.rmtree(tempUpdateFolder)
         except:
             print("Could not remove file")
+            
+def download_zip(zips):
+    import urllib.request
+    
+    for key, value in zips.items():
+        output_dir = fr"C:\{key}"
+        if not os.path.exists(output_dir):
+            try:
+                os.makedirs(output_dir, exist_ok=True)
+                output_file = os.path.join(output_dir, fr"{key}.zip")
+                urllib.request.urlretrieve(value, output_file)
+
+                # Extract the downloaded ZIP file
+                with zipfile.ZipFile(output_file, 'r') as zip_ref:
+                    zip_ref.extractall(output_dir)
+                
+                os.remove(output_file)
+
+                print(fr"{key} has been downloaded and extracted successfully.")
+            except Exception as e:
+                print(f"An error occurred during the download and extraction of {key}: {str(e)}")
+        else:
+            print(fr"{key} already installed")
