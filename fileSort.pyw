@@ -1,5 +1,5 @@
-## UPDATED 03/13/25 ##
-currentVersion = 'v1.91'
+## UPDATED 07/22/25 ##
+currentVersion = 'v1.92'
 
 from dataclasses import dataclass, field
 import os
@@ -13,7 +13,7 @@ from datetime import datetime
 import io
 import traceback
 
-modules_to_install = [("pymupdf", "fitz"), "PyPDF2", "reportlab", "requests", "setuptools", "psutil", ("pywin32", "win32com")]
+modules_to_install = [("pymupdf", "fitz"), "PyPDF2", "reportlab", "requests", "setuptools", ("pywin32", "win32com")]
 
 from functions import install_and_import
 
@@ -110,8 +110,6 @@ class Order:
             "AGI CLEAR" : ["AGI CLR", "AGICLR", "AGI CLEAR", "AGICLEAR", "AGI CL", "AGICL"],
             "RAIN" : ["RN", "RAIN"],
             "OBSCURE" : ["OBS", "OBSCURE"],
-            "SATIN" : ["SATIN", "STN", "SAT", "SN"],
-            "FROSTED" : ["FROSTED", "FROST"],
             "BRONZE" : ["BRONZE", "BRZ", "BRNZ"],
             "GREY" : ["GREY", "GRY", "GRAY"],
             "MIRROR" : ["MIR", "MIRCT", "MIRSQ", "MIRSQCT", "MIRCTSQ", "LMIRSQCT", "LMIRCT", "LMIR"],
@@ -356,12 +354,28 @@ def processPdfGlassType(pdfPath, order = Order):
     glassThicknesses = set()
     glassTypes = set()
 
+    # The regex pattern:
+    # (?:^|\n)    : Non-capturing group. Matches either the start of the string (^)
+    #               or a newline character (\n). This ensures we can capture
+    #               content at the very beginning of the string or after a newline.
+    # ([^\n]+)    : Capturing group 1. Matches one or more characters that are
+    #               NOT a newline (\n). This captures everything on the line
+    #               until the next newline or the end of the string.
+    # TEMPERED\n  : Matches the literal string "TEMPERED" followed by a newline.
+    # Note: The 're.DOTALL' flag is NOT used here to ensure '.' does not match newlines,
+    #       which is important for '([^\n]+)' to work as intended for a single line.
+    
     # Match example: >1/4" AGI Clear< Tempered
-    tempGlassPattern = r"\d{1,2}/\d{1,2}\"\s\w+.*?(?= TEMPERED)"
+    tempGlassPattern = r"(?:^|\n)([^\n]+)TEMPERED\n"
+    # tempGlassPattern = r"\d{1,2}/\d{1,2}\"\s\w+.*?(?= TEMPERED)"
+    
     # Match example: >1/4" AGI Clear< Annealed
-    annGlassPattern = r"\d{1,2}/\d{1,2}\"\s\w+.*?(?= ANNEALED)"
+    annGlassPattern = r"(?:^|\n)([^\n]+)ANNEALED\n"
+    # annGlassPattern = r"\d{1,2}/\d{1,2}\"\s\w+.*?(?= ANNEALED)"
+    
     # Exception for "1/4" Mirror NOT Tempered", categorize as "Mirror"
-    mirrorPattern = r"\d{1,2}/\d{1,2}\"\s\w+.*?(?= NOT TEMPERED)"
+    mirrorPattern = r"(?:^|\n)([^\n]+)NOT TEMPERED\n"
+    # mirrorPattern = r"\d{1,2}/\d{1,2}\"\s\w+.*?(?= NOT TEMPERED)"
     
     pdfRead = PdfReader(pdfPath)
     pdfCrop = fitz.open(pdfPath)
@@ -403,11 +417,18 @@ def processPdfGlassType(pdfPath, order = Order):
             glassPatternMatch = glassPatternMatch.replace("/", ".")
             glassPatternMatch = sanitizeName(glassPatternMatch, "")
             
-            order.glassThickness = glassPatternMatch.split()[0]
-            glassThicknesses.add(order.glassThickness)
-            
-            order.glassType = " ".join(glassPatternMatch.split()[1:])
-            glassTypes.add(order.glassType)
+            if len(glassPatternMatch.split()) < 2:
+                order.glassThickness = ""
+                glassThicknesses.add(order.glassThickness)
+                
+                order.glassType = glassPatternMatch
+                glassTypes.add(order.glassType)
+            else:
+                order.glassThickness = glassPatternMatch.split()[0]
+                glassThicknesses.add(order.glassThickness)
+                
+                order.glassType = " ".join(glassPatternMatch.split()[1:])
+                glassTypes.add(order.glassType)
         except:
             raise Exception(rf"{order.uniqueCode}: No glass type found in Glass Order.")
         
@@ -433,8 +454,10 @@ def processPdfGlassType(pdfPath, order = Order):
 
 def run():
     # Check if config file exists and has all options
+    if os.path.exists("fileSort.ini"):
+        os.rename("fileSort.ini", "config.ini")
     global configFileName, configProps
-    configFileName = 'fileSort.ini'
+    configFileName = 'config.ini'
     configProps = {
         "initials" : "",
         "bates_number" : "", 

@@ -22,7 +22,7 @@ def askFolderDirectory(windowTitle="Select Folder"):
 
 createShortcut(os.path.abspath(__file__))
 
-config_file_name = 'fileSort.ini'
+config_file_name = 'config.ini'
 config = configparser.ConfigParser()
 config.read(config_file_name)
 

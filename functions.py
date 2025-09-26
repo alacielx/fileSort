@@ -130,7 +130,7 @@ def createShortcut(file_path):
     shortcut.TargetPath = pythonw_exe
     shortcut.Arguments = f'"{file_path}"'
     shortcut.WorkingDirectory = script_dir
-    shortcut.IconLocation = path.join(script_dir, path.splitext(file_name)[0] + ".ico")  # Optional: use Python executable icon
+    shortcut.IconLocation = path.join(script_dir, path.splitext(file_name)[0] + "Icon.ico")  # Optional: use Python executable icon
     shortcut.Save()
 
     print(f"Shortcut created: {shortcut_path}")

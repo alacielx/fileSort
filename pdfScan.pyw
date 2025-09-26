@@ -1,11 +1,21 @@
-## UPDATED 10/05/23 ##
+## UPDATED 03/31/2025 ##
 currentVersion = 'v1.53'
 
 import os
 import re
 import glob
 import time
-import pytesseract
+
+modules_to_install = ["pytesseract", "opencv-python", "numpy", ("pymupdf", "fitz")]
+
+from functions import install_and_import
+
+for module in modules_to_install:
+    if isinstance(module, tuple):
+        install_and_import(module[0],module[1])
+    else:
+        install_and_import(module)
+        
 from pytesseract import Output
 import numpy as np
 import subprocess
@@ -167,8 +177,8 @@ root.withdraw()
 #     create_config_file()
 
 #Check if config file exists and has all options
-config_file_name = 'pdfScanConfig.ini'
-configProps = {"pdf_folder" : "", "working_date" : "", "installation_date" : "", "initials" : "", "add_so_number" : "True"}
+config_file_name = 'config.ini'
+configProps = {"scanned_pdf_folder" : "", "working_date" : "", "installation_date" : "", "initials" : "", "add_so_number" : "True"}
 
 checkConfig(config_file_name, configProps)
 configProps = readConfig(config_file_name)
@@ -185,13 +195,13 @@ if not configProps['working_date'] == today:
             break
         messagebox.showinfo("PDF Scanning " + currentVersion, "Please enter a valid installation date")
 
-if not configProps['pdf_folder']:
-    configProps['pdf_folder'] = askFolderDirectory()
+if not configProps['scanned_pdf_folder']:
+    configProps['scanned_pdf_folder'] = askFolderDirectory()
 
 if not configProps['initials']:
     configProps['initials'] = askInput("Enter Initials:")
 
-pdf_folder = configProps["pdf_folder"]
+scanned_pdf_folder = configProps["scanned_pdf_folder"]
 working_date = configProps["working_date"]
 installation_date = configProps["installation_date"]
 initials = configProps["initials"]
@@ -211,7 +221,7 @@ if not os.path.exists(fr"C:\tesseract\Tesseract\tesseract.exe"):
 
 pytesseract.pytesseract.tesseract_cmd = fr"C:\tesseract\Tesseract\tesseract.exe"
 
-for pdf in glob.glob(os.path.join(pdf_folder, "*.pdf")):
+for pdf in glob.glob(os.path.join(scanned_pdf_folder, "*.pdf")):
     # try:
         if os.path.basename(pdf).startswith("~$"):
             continue  # Skip temporary files
@@ -329,10 +339,10 @@ for pdf in glob.glob(os.path.join(pdf_folder, "*.pdf")):
         if add_so_number == 'True':
             new_file_name = f"{new_file_name}-{so_number}"
 
-        new_file_path = os.path.join(pdf_folder,f"{new_file_name}.pdf")
+        new_file_path = os.path.join(scanned_pdf_folder,f"{new_file_name}.pdf")
 
         while os.path.exists(new_file_path):
-            new_file_path = os.path.join(pdf_folder,f"{new_file_name}_{duplicate_count}.pdf")
+            new_file_path = os.path.join(scanned_pdf_folder,f"{new_file_name}_{duplicate_count}.pdf")
             duplicate_count += 1
         
         original_pdf_name = os.path.splitext(os.path.basename(pdf))[0]
